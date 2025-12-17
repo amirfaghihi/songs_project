@@ -1,20 +1,17 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Type, TypeVar
+from typing import Any
 
 from flask import jsonify, request
 from pydantic import BaseModel, ValidationError
 
 
-F = TypeVar("F", bound=Callable[..., Any])
-T = TypeVar("T", bound=BaseModel)
-
-
-def validate_request(model: Type[T]) -> Callable[[F], F]:
+def validate_request[T: BaseModel, F: Callable[..., Any]](model: type[T]) -> Callable[[F], F]:
     """
     Decorator to automatically validate request JSON against a Pydantic model.
-    
+
     Usage:
         @validate_request(MyRequestModel)
         def my_endpoint(data: MyRequestModel):
@@ -41,10 +38,10 @@ def validate_request(model: Type[T]) -> Callable[[F], F]:
     return decorator
 
 
-def validate_query(model: Type[T]) -> Callable[[F], F]:
+def validate_query[T: BaseModel, F: Callable[..., Any]](model: type[T]) -> Callable[[F], F]:
     """
     Decorator to automatically validate query parameters against a Pydantic model.
-    
+
     Usage:
         @validate_query(MyQueryModel)
         def my_endpoint(query: MyQueryModel):
@@ -67,6 +64,3 @@ def validate_query(model: Type[T]) -> Callable[[F], F]:
         return wrapped  # type: ignore[return-value]
 
     return decorator
-
-
-

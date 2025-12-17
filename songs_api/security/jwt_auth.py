@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from functools import wraps
-from typing import Any, Callable, TypeVar
+from typing import Any
 
 import jwt
 from flask import current_app, request
 
 from songs_api.api.errors import ApiError
-
-
-F = TypeVar("F", bound=Callable[..., Any])
 
 
 def create_access_token(username: str) -> str:
@@ -19,11 +17,11 @@ def create_access_token(username: str) -> str:
     algorithm = str(current_app.config.get("JWT_ALGORITHM", "HS256"))
     expire_minutes = int(current_app.config.get("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", 60))
 
-    expire = datetime.now(timezone.utc) + timedelta(minutes=expire_minutes)
+    expire = datetime.now(UTC) + timedelta(minutes=expire_minutes)
     payload = {
         "sub": username,
         "exp": expire,
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
     }
     token = jwt.encode(payload, secret_key, algorithm=algorithm)
     return token
@@ -46,7 +44,7 @@ def verify_access_token(token: str) -> str:
         raise ApiError(message="Invalid token", status_code=401) from exc
 
 
-def requires_jwt_auth(fn: F) -> F:
+def requires_jwt_auth[F: Callable[..., Any]](fn: F) -> F:
     """Require JWT authentication for a route."""
 
     @wraps(fn)
@@ -65,6 +63,3 @@ def requires_jwt_auth(fn: F) -> F:
         return fn(*args, **kwargs)
 
     return wrapper  # type: ignore[return-value]
-
-
-
