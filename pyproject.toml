@@ -1,0 +1,26 @@
+[project]
+name = "songs-api"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+  "flask>=3.0.0",
+  "mongoengine>=0.29.0",
+  "pydantic>=2.8.0",
+  "pydantic-settings>=2.4.0",
+  "python-dotenv>=1.0.0",
+  "pyjwt>=2.9.0",
+  "flasgger>=0.9.7",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-cov>=6.0.0",
+  "mongomock>=4.2.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+
