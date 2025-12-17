@@ -37,6 +37,9 @@ def app(test_db):
         jwt_access_token_expire_minutes=60,
         admin_username="testuser",
         admin_password="testpass",
+        environment="local",
+        log_level="ERROR",  # Suppress logs during tests
+        rate_limit_enabled=False,  # Disable rate limiting for tests
     )
 
     app = create_app(settings=settings)
@@ -94,5 +97,3 @@ def sample_songs(test_db):
     ]
     Song.objects.insert(songs)
     return songs
-
-

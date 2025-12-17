@@ -23,7 +23,7 @@ def test_add_rating_invalid_range(client, auth_headers, sample_songs):
         headers=auth_headers,
         json={"song_id": song_id, "rating": 6},
     )
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 
 def test_add_rating_song_not_found(client, auth_headers):
@@ -82,5 +82,3 @@ def test_ratings_require_auth(client, sample_songs):
 
     response = client.get(f"/api/v1/songs/{song_id}/ratings")
     assert response.status_code == 401
-
-

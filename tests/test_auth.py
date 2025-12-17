@@ -25,7 +25,7 @@ def test_login_missing_fields(client):
         "/api/v1/auth/login",
         json={"username": "testuser"},
     )
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 
 def test_protected_route_without_token(client):
@@ -47,6 +47,3 @@ def test_protected_route_with_valid_token(client, auth_headers):
     """Test that protected routes accept valid tokens."""
     response = client.get("/api/v1/songs", headers=auth_headers)
     assert response.status_code == 200
-
-
-

@@ -20,12 +20,10 @@ def test_search_songs_by_title(client, auth_headers, sample_songs):
 def test_search_songs_missing_message(client, auth_headers):
     """Test search without message parameter."""
     response = client.get("/api/v1/songs/search", headers=auth_headers)
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 
 def test_search_songs_requires_auth(client):
     """Test that search requires authentication."""
     response = client.get("/api/v1/songs/search?message=test")
     assert response.status_code == 401
-
-
