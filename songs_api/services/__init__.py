@@ -5,6 +5,3 @@ from songs_api.services.ratings_service import RatingsService
 from songs_api.services.songs_service import SongsService
 
 __all__ = ["AuthService", "SongsService", "RatingsService"]
-
-
-

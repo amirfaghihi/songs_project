@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
-
 from mongoengine import DateField, Document, FloatField, IntField, StringField
 
 
@@ -48,5 +46,3 @@ class RatingStats(Document):
     max = IntField(default=1)
 
     meta = {"collection": "rating_stats", "indexes": ["song_id"]}
-
-

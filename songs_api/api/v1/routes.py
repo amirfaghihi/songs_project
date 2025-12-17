@@ -262,5 +262,3 @@ def register_routes(bp: Blueprint) -> None:
         ratings_service = RatingsService()
         response = ratings_service.get_rating_stats(song_id=song_id)
         return jsonify(response.model_dump())
-
-

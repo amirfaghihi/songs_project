@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from bson import ObjectId
 from mongoengine import Q
 
 from songs_api.models.documents import Rating, RatingStats, Song
@@ -87,5 +86,3 @@ class UnitOfWork:
     def get_rating_stats(self, song_id: str) -> RatingStats | None:
         """Get rating statistics for a song."""
         return RatingStats.objects(song_id=song_id).first()
-
-

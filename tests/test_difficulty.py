@@ -22,5 +22,3 @@ def test_average_difficulty_requires_auth(client):
     """Test that average difficulty requires authentication."""
     response = client.get("/api/v1/songs/difficulty/average")
     assert response.status_code == 401
-
-

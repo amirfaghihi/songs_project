@@ -19,5 +19,3 @@ def json_error(err: ApiError):
     if err.status_code == 401:
         resp.headers["WWW-Authenticate"] = 'Basic realm="Songs API"'
     return resp, err.status_code
-
-

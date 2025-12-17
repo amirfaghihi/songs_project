@@ -16,7 +16,7 @@ def seed_songs_from_file(file_path: str) -> None:
         print(f"Songs collection already has {existing_count} documents. Skipping seed.")
         return
 
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, encoding="utf-8") as f:
         songs_data = [json.loads(line) for line in f if line.strip()]
 
     songs = []
@@ -38,5 +38,3 @@ def seed_songs_from_file(file_path: str) -> None:
         print(f"Seeded {len(songs)} songs into the database.")
     else:
         print("No songs to seed.")
-
-

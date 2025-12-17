@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from songs_api.models.documents import Song
-from songs_api.schemas import AverageDifficultyResponse, SongResponse, SongsListResponse, SearchSongsResponse
+from songs_api.schemas import AverageDifficultyResponse, SearchSongsResponse, SongResponse, SongsListResponse
 from songs_api.uow import UnitOfWork
 
 
@@ -11,16 +11,16 @@ class SongsService:
     def list_songs(self, page: int, page_size: int) -> SongsListResponse:
         """
         Get paginated list of songs.
-        
+
         Args:
             page: Page number (1-indexed)
             page_size: Number of items per page
-            
+
         Returns:
             SongsListResponse with data and pagination metadata
         """
         skip = (page - 1) * page_size
-        
+
         with UnitOfWork() as uow:
             songs, total = uow.list_songs(skip=skip, limit=page_size)
 
@@ -40,17 +40,17 @@ class SongsService:
     def search_songs(self, message: str, page: int, page_size: int) -> SearchSongsResponse:
         """
         Search songs by artist or title.
-        
+
         Args:
             message: Search query string
             page: Page number (1-indexed)
             page_size: Number of items per page
-            
+
         Returns:
             SearchSongsResponse with matching songs and pagination
         """
         skip = (page - 1) * page_size
-        
+
         with UnitOfWork() as uow:
             songs, total = uow.search_songs(query=message, skip=skip, limit=page_size)
 
@@ -71,10 +71,10 @@ class SongsService:
     def get_average_difficulty(self, level: int | None = None) -> AverageDifficultyResponse:
         """
         Calculate average difficulty of songs, optionally filtered by level.
-        
+
         Args:
             level: Optional level filter
-            
+
         Returns:
             AverageDifficultyResponse with calculated average
         """
@@ -94,6 +94,3 @@ class SongsService:
             level=song.level,
             released=song.released,
         )
-
-
-

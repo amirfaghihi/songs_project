@@ -22,5 +22,3 @@ def test_list_songs_requires_auth(client):
     """Test that listing songs requires authentication."""
     response = client.get("/api/v1/songs")
     assert response.status_code == 401
-
-

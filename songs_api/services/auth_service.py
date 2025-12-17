@@ -14,7 +14,7 @@ class AuthService:
     def login(self, username: str, password: str) -> str:
         """
         Authenticate user and return JWT token.
-        
+
         Raises:
             ApiError: If credentials are invalid
         """
@@ -22,6 +22,3 @@ class AuthService:
             raise ApiError(message="Invalid credentials", status_code=401)
 
         return create_access_token(username=username)
-
-
-

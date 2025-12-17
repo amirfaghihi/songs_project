@@ -11,14 +11,14 @@ class RatingsService:
     def add_rating(self, song_id: str, rating: int) -> RatingStatsResponse:
         """
         Add a rating for a song and return updated statistics.
-        
+
         Args:
             song_id: MongoDB ObjectId of the song
             rating: Rating value (1-5)
-            
+
         Returns:
             RatingStatsResponse with updated statistics
-            
+
         Raises:
             ApiError: If song not found (404)
         """
@@ -42,13 +42,13 @@ class RatingsService:
     def get_rating_stats(self, song_id: str) -> RatingStatsResponse:
         """
         Get rating statistics for a song.
-        
+
         Args:
             song_id: MongoDB ObjectId of the song
-            
+
         Returns:
             RatingStatsResponse with statistics or zeros if no ratings exist
-            
+
         Raises:
             ApiError: If song not found (404)
         """
@@ -77,6 +77,3 @@ class RatingsService:
             highest=stats.max,
             count=stats.count,
         )
-
-
-

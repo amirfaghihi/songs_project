@@ -98,5 +98,3 @@ class ErrorResponse(BaseModel):
 
     error: str
     status_code: int
-
-
