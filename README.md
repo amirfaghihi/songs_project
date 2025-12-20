@@ -7,10 +7,12 @@ Production-ready REST API built with Flask, MongoDB, and modern Python patterns.
 ### Docker Compose (Recommended)
 
 #### Standalone Mode (Default)
+Includes MongoDB, Redis, and API:
 ```bash
 docker-compose up -d
 # API: http://localhost:8000
 # Swagger: http://localhost:8000/docs
+# Redis: localhost:6379
 ```
 
 #### With Custom Credentials
@@ -47,6 +49,9 @@ docker-compose up -d
 docker run -d --name songs_db -p 27017:27017 \
   -e MONGODB_ROOT_PASSWORD=adminpassword \
   bitnami/mongodb:latest
+
+# Start Redis (optional, for caching and rate limiting)
+docker run -d --name songs_redis -p 6379:6379 redis:7-alpine
 
 # Install dependencies
 make install
@@ -115,13 +120,19 @@ MONGO_URI=mongodb://root:securepassword@mongodb:27017/songs_db?authSource=admin&
 | `LOG_FORMAT` | `text` | `text` (dev) or `json` (production) |
 | `RATE_LIMIT_ENABLED` | `true` | Enable rate limiting |
 | `RATE_LIMIT_DEFAULT` | `100 per minute` | Default rate limit |
+| `RATE_LIMIT_REDIS_URL` | `redis://localhost:6379/1` | Redis URL for rate limiting |
 | `RATE_LIMIT_STORAGE_URI` | `memory://` | `memory://` (dev) or `redis://host:port` (production) |
+| `CACHE_ENABLED` | `true` | Enable Redis caching |
+| `CACHE_REDIS_URL` | `redis://localhost:6379/0` | Redis URL for caching |
+| `CACHE_DEFAULT_TTL` | `300` | Default cache TTL in seconds |
 
-**Note:** When using Bitnami MongoDB, the root username is `root`, not `admin`.
+**Notes:** 
+- When using Bitnami MongoDB, the root username is `root`, not `admin`.
+- Redis is optional for development but **required for production** for caching and distributed rate limiting.
 
 **Production examples:**
 
-Standalone MongoDB:
+Standalone MongoDB with Redis:
 ```bash
 ENVIRONMENT=production
 MONGO_ROOT_USERNAME=prodadmin
@@ -129,10 +140,16 @@ MONGO_ROOT_PASSWORD=secure_password
 MONGO_URI=mongodb://prodadmin:secure_password@host:27017/songs_db?authSource=admin
 JWT_SECRET_KEY=<generated-secret>
 LOG_FORMAT=json
-RATE_LIMIT_STORAGE_URI=redis://redis:6379
+
+# Redis Configuration (Required for Production)
+CACHE_ENABLED=true
+CACHE_REDIS_URL=redis://redis:6379/0
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_REDIS_URL=redis://redis:6379/1
+RATE_LIMIT_STORAGE_URI=redis://redis:6379/1
 ```
 
-With Replica Set:
+With Replica Set and Redis:
 ```bash
 ENVIRONMENT=production
 MONGO_ROOT_USERNAME=prodadmin
@@ -142,7 +159,14 @@ MONGODB_REPLICA_SET_NAME=rs0
 MONGO_URI=mongodb://prodadmin:secure_password@host:27017/songs_db?authSource=admin&replicaSet=rs0
 JWT_SECRET_KEY=<generated-secret>
 LOG_FORMAT=json
-RATE_LIMIT_STORAGE_URI=redis://redis:6379
+
+# Redis Configuration (Required for Production)
+CACHE_ENABLED=true
+CACHE_REDIS_URL=redis://redis:6379/0
+CACHE_DEFAULT_TTL=300
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_REDIS_URL=redis://redis:6379/1
+RATE_LIMIT_STORAGE_URI=redis://redis:6379/1
 ```
 
 ## API Endpoints
@@ -193,7 +217,8 @@ curl -X GET http://localhost:8000/api/v1/songs \
 - **Pydantic Validation** for request/response
 - **OpenAPI/Swagger** docs at `/docs`
 - **Structured Logging** (JSON in production, colored text in dev)
-- **Rate Limiting** (per-user/IP, Redis support)
+- **Redis Caching** for improved performance (production)
+- **Rate Limiting** (per-user/IP, Redis-backed in production)
 - **Environment-aware** configuration (local/development/production)
 
 ## Commands
@@ -271,8 +296,8 @@ make run
 
 - Python 3.14+
 - MongoDB (Bitnami MongoDB image recommended for Docker deployments)
+- Redis 7+ (optional for development, **required for production**)
 - uv package manager: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- Redis (optional, for production rate limiting)
 
 ## Technology Stack
 
@@ -280,6 +305,10 @@ make run
   - Default admin username: `root` (customizable)
   - Supports standalone and replica set modes
   - Authentication enabled by default
+- **Cache & Rate Limiting:** Redis 7+ (Alpine)
+  - Database 0: Application caching
+  - Database 1: Rate limiting
+  - Persistent storage with AOF (Append-Only File)
 - **Web Framework:** Flask with Gunicorn WSGI server (4 workers)
 - **ODM:** MongoEngine for MongoDB object-document mapping
 - **Authentication:** JWT tokens with PyJWT
@@ -301,6 +330,30 @@ make run
 - Include `replicaSet` parameter in `MONGO_URI`
 
 **Note:** For multi-node replica sets in production, you'll need multiple MongoDB containers. The current docker-compose.yml supports a single-node replica set, which enables replica set features for compatibility but doesn't provide actual redundancy.
+
+## Redis Configuration
+
+### Development Mode
+- Caching: **Disabled** (cache is only enabled in production by default)
+- Rate Limiting: **Memory-based** (no Redis required)
+- You can enable Redis in development by setting `CACHE_ENABLED=true` and `RATE_LIMIT_STORAGE_URI=redis://localhost:6379/1`
+
+### Production Mode
+- Caching: **Enabled** with Redis (database 0)
+  - Caches API responses for improved performance
+  - Configurable TTL per endpoint
+  - Automatic cache invalidation on data updates
+- Rate Limiting: **Redis-backed** (database 1)
+  - Distributed rate limiting across multiple workers
+  - Per-user and per-IP tracking
+  - Configurable limits per endpoint
+
+### Redis Databases
+The application uses two separate Redis databases:
+- **Database 0:** Application caching (query results, computed data)
+- **Database 1:** Rate limiting counters and metadata
+
+This separation ensures rate limiting data doesn't interfere with cached application data.
 
 ## License
 
