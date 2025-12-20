@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 from flask import request
 
@@ -35,35 +36,27 @@ def cached_response(prefix: str, ttl: int = 300):
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             cache = get_cache()
 
-            # If cache is disabled, just execute the function
             if not cache or not cache.enabled:
                 return func(*args, **kwargs)
 
-            # Generate cache key from route and query params
             cache_args = [func.__name__]
 
-            # Include all query parameters in cache key
             if request.args:
                 cache_args.extend([f"{k}={v}" for k, v in sorted(request.args.items())])
 
-            # Include URL path parameters (e.g., song_id)
             if kwargs:
                 cache_args.extend([f"{k}={v}" for k, v in sorted(kwargs.items())])
 
             key = cache_key(*cache_args, prefix=prefix)
 
-            # Try to get from cache
             cached_value = cache.get(key)
             if cached_value is not None:
-                # Return cached response (already serialized)
                 from flask import jsonify
 
                 return jsonify(cached_value)
 
-            # Execute the function (it returns jsonify(...))
             result = func(*args, **kwargs)
 
-            # Extract JSON data from the response to cache it
             if hasattr(result, "get_json"):
                 json_data = result.get_json()
                 if json_data is not None:
