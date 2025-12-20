@@ -16,30 +16,15 @@ if TYPE_CHECKING:
 
 
 def get_user_identifier() -> str:
-    """
-    Get identifier for rate limiting.
-
-    Uses authenticated user if available, otherwise falls back to IP address.
-    """
-    # Check if user is authenticated via JWT
+    """Get identifier for rate limiting."""
     if hasattr(request, "jwt_username") and request.jwt_username:
         return f"user:{request.jwt_username}"
 
-    # Fall back to IP address
     return f"ip:{get_remote_address()}"
 
 
 def create_limiter(app: Flask, settings: Settings) -> Limiter:
-    """
-    Create and configure rate limiter.
-
-    Args:
-        app: Flask application instance
-        settings: Application settings
-
-    Returns:
-        Configured Limiter instance
-    """
+    """Create and configure rate limiter."""
     if not settings.rate_limit_enabled:
         logger.info("Rate limiting is disabled")
         limiter = Limiter(
@@ -51,7 +36,8 @@ def create_limiter(app: Flask, settings: Settings) -> Limiter:
         )
         return limiter
 
-    logger.info(f"Rate limiting enabled with default: {settings.rate_limit_default}")
+    storage_type = "Redis" if settings.rate_limit_storage_uri.startswith("redis://") else "in-memory"
+    logger.info(f"Rate limiting enabled with {storage_type} storage (default: {settings.rate_limit_default})")
 
     limiter = Limiter(
         key_func=get_user_identifier,
@@ -63,7 +49,6 @@ def create_limiter(app: Flask, settings: Settings) -> Limiter:
         headers_enabled=True,
     )
 
-    # Log rate limit exceeded events
     @app.errorhandler(429)
     def rate_limit_handler(e):
         logger.warning(

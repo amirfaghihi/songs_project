@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from flask import g, has_request_context, request
@@ -13,11 +14,7 @@ if TYPE_CHECKING:
 
 
 def serialize_record(record: dict) -> dict:
-    """
-    Serialize log record for JSON output.
-
-    Adds request-specific information when available.
-    """
+    """Serialize log record for JSON output."""
     subset = {
         "timestamp": record["time"].isoformat(),
         "level": record["level"].name,
@@ -27,7 +24,6 @@ def serialize_record(record: dict) -> dict:
         "line": record["line"],
     }
 
-    # Add request context if available
     if has_request_context():
         subset["request"] = {
             "method": request.method,
@@ -36,11 +32,9 @@ def serialize_record(record: dict) -> dict:
             "user_agent": request.headers.get("User-Agent", ""),
         }
 
-        # Add user info if authenticated
         if hasattr(g, "jwt_username"):
             subset["user"] = g.jwt_username
 
-    # Add exception info if present
     if record["exception"]:
         subset["exception"] = {
             "type": record["exception"].type.__name__ if record["exception"].type else None,
@@ -51,18 +45,10 @@ def serialize_record(record: dict) -> dict:
 
 
 def configure_logging(settings: Settings) -> None:
-    """
-    Configure loguru logging based on environment.
-
-    In PRODUCTION: JSON format with structured logging
-    In DEVELOPMENT/LOCAL: Human-readable text format with colors
-    """
-    # Remove default handler
+    """Configure loguru logging based on environment."""
     logger.remove()
 
-    # Configure based on environment
     if settings.is_production:
-        # Production: JSON structured logging
         import json
 
         def json_sink(message):
@@ -79,7 +65,6 @@ def configure_logging(settings: Settings) -> None:
             diagnose=False,
         )
     else:
-        # Development/Local: Human-readable format with colors
         logger.add(
             sys.stdout,
             level=settings.log_level,
@@ -94,4 +79,5 @@ def configure_logging(settings: Settings) -> None:
             diagnose=True,
         )
 
-    logger.info(f"Logging configured for {settings.environment.value} environment")
+    env_value = settings.environment.value if isinstance(settings.environment, Enum) else str(settings.environment)
+    logger.info(f"Logging configured for {env_value} environment")
