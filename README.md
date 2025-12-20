@@ -1,362 +1,212 @@
-# Songs API (Flask + MongoDB)
+# Songs API
 
-Production-level REST API built with Flask, MongoEngine ODM, and modern Python patterns.
-
-## Features
-
-- ✅ **MongoEngine ODM**: Document-Object Mapper with schema validation
-- ✅ **Unit of Work pattern**: Clean repository pattern for database operations
-- ✅ **API Versioning**: All routes under `/api/v1` prefix
-- ✅ **JWT Authentication**: Secure token-based authentication with PyJWT
-- ✅ **Pydantic Validation**: Custom decorators for request/response validation
-- ✅ **OpenAPI/Swagger**: Auto-generated API docs at `/docs` via flasgger
-- ✅ **Scalability**: Precomputed rating stats for O(1) retrieval at scale
-- ✅ **uv Package Manager**: Fast Rust-based dependency management
-- ✅ **Runtime Environments**: LOCAL, DEVELOPMENT, PRODUCTION configurations
-- ✅ **Structured Logging**: Loguru with JSON logging for production
-- ✅ **Rate Limiting**: Per-user/IP rate limiting with Redis support
-- ✅ **Production Ready**: Gunicorn, environment-based config, comprehensive tests
-
-## Requirements
-
-- Python 3.14+
-- MongoDB (Docker recommended)
-- uv (install: `curl -LsSf https://astral.sh/uv/install.sh | sh`)
+Production-ready REST API built with Flask, MongoDB, and modern Python patterns.
 
 ## Quick Start
 
-### 1. Docker Compose (Recommended)
-
+### Docker Compose (Recommended)
 ```bash
-# Start MongoDB and API
+# Optional: Set MongoDB credentials via environment variables
+# export MONGO_ROOT_USERNAME=myuser
+# export MONGO_ROOT_PASSWORD=mypassword
+# Or create a .env file with these variables
+
 docker-compose up -d
-
-# View logs
-docker-compose logs -f api
-
-# Stop services
-docker-compose down
+# API: http://localhost:5000
+# Swagger: http://localhost:5000/docs
 ```
 
-**Access:**
-- API: http://localhost:5000
-- Swagger: http://localhost:5000/docs
-
-### 2. Local Development
-
-**Start MongoDB:**
+### Local Development
 ```bash
+# Start MongoDB
 docker run -d --name songs_db -p 27017:27017 mongo:7.0
-```
 
-**Setup and run:**
-```bash
 # Install dependencies
 make install
 
-# Copy and configure environment
-cp .env.sample .env
-# Edit .env with your settings
+# Setup environment (optional - for custom MongoDB credentials)
+# cp .env.example .env
+# Edit .env with your MongoDB username/password if needed
 
-# Initialize database
-export FLASK_APP=wsgi.py
-uv run flask init-db
-uv run flask seed-songs
+# Initialize database and seed data
+make seed  # Seeds songs + test user (testuser/testpass)
+# Note: Passwords are stored as secure hashes in the database, never as plain text
 
-# Run with auto-reload (development)
-make run-dev
-
-# Or run with gunicorn (production-like)
-make run
+# Run
+make run-dev  # Development with auto-reload
+make run      # Production-like with gunicorn
 ```
-
-**Access:**
-- API: http://localhost:8000 (default for `make run`)
-- Swagger: http://localhost:8000/docs
-
-## API Documentation
-
-Access the interactive **Swagger UI** at `/docs` endpoint once the server is running:
-- Docker Compose: http://localhost:5000/docs
-- Local Development: http://localhost:8000/docs
-
-Features:
-- Interactive API testing
-- Request/response examples
-- Schema validation info
-- JWT authentication testing (click "Authorize" button)
-
 
 ## Configuration
 
-Configure via environment variables or `.env` file (see `.env.sample` for all options):
+Essential environment variables (see `.env.example` for all options):
 
-### Essential Settings
+### Docker Compose Variables
+
+When using Docker Compose, you can set these variables in a `.env` file or export them:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ENVIRONMENT` | `local` | Runtime environment: `local`, `development`, `production` |
-| `MONGO_URI` | `mongodb://localhost:27017` | MongoDB connection string |
+| `MONGO_ROOT_USERNAME` | `admin` | MongoDB root username |
+| `MONGO_ROOT_PASSWORD` | `adminpassword` | MongoDB root password |
+| `MONGO_DB_NAME` | `songs_db` | MongoDB database name |
+| `JWT_SECRET_KEY` | `change-this-secret-key-in-production` | JWT secret key |
+
+### Application Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ENVIRONMENT` | `local` | Runtime: `local`, `development`, `production` |
+| `MONGO_URI` | Auto-built | MongoDB connection string (auto-built from components if not provided) |
 | `MONGO_DB_NAME` | `songs_db` | Database name |
-| `JWT_SECRET_KEY` | - | **Required for production** - Generate: `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
+| `MONGO_ROOT_USERNAME` | `admin` | MongoDB root username (used to build MONGO_URI) |
+| `MONGO_ROOT_PASSWORD` | `adminpassword` | MongoDB root password (used to build MONGO_URI) |
+| `MONGO_HOST` | `localhost` | MongoDB host (used to build MONGO_URI) |
+| `MONGO_PORT` | `27017` | MongoDB port (used to build MONGO_URI) |
+| `JWT_SECRET_KEY` | - | **Required** - Generate: `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
+| `LOG_FORMAT` | `text` | `text` (dev) or `json` (production) |
+| `RATE_LIMIT_ENABLED` | `true` | Enable rate limiting |
+| `RATE_LIMIT_DEFAULT` | `100 per minute` | Default rate limit |
+| `RATE_LIMIT_STORAGE_URI` | `memory://` | `memory://` (dev) or `redis://host:port` (production) |
 
-### Logging (Environment-Specific)
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `LOG_LEVEL` | `INFO` | Logging level: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
-| `LOG_FORMAT` | `text` | Log format: `text` (colored, dev) or `json` (production) |
-
-**Automatic behavior:**
-- **LOCAL/DEVELOPMENT**: Human-readable colored logs
-- **PRODUCTION**: Structured JSON logs with request context, user tracking, exception details
-
-### Rate Limiting
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `RATE_LIMIT_ENABLED` | `true` | Enable/disable rate limiting |
-| `RATE_LIMIT_DEFAULT` | `100 per minute` | Default rate limit for all endpoints |
-| `RATE_LIMIT_STORAGE_URI` | `memory://` | Storage backend: `memory://` (dev) or `redis://host:port` (production) |
-
-**Features:**
-- Authenticated users tracked by username
-- Anonymous users tracked by IP address
-- Custom limits per endpoint supported
-- Rate limit headers in all responses: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
-- Returns `429 Too Many Requests` when exceeded
-
-### Production Configuration Example
-
+**Production example:**
 ```bash
-# .env
 ENVIRONMENT=production
-MONGO_URI=mongodb://user:pass@mongo-host:27017/songs_db
-JWT_SECRET_KEY=<your-secure-random-key>
-LOG_LEVEL=INFO
+MONGO_URI=mongodb://user:pass@host:27017/songs_db
+JWT_SECRET_KEY=<generated-secret>
 LOG_FORMAT=json
-RATE_LIMIT_ENABLED=true
-RATE_LIMIT_DEFAULT=100 per minute
 RATE_LIMIT_STORAGE_URI=redis://redis:6379
 ```
 
-## Key Features
+## API Endpoints
 
-### Runtime Environments
+All routes require JWT authentication (except `/api/v1/health`, `/api/v1/auth/login`, and `/api/v1/auth/register`):
 
-Three distinct environments with automatic configuration:
-- **LOCAL**: Development with colored logs, debug info, memory rate limiting
-- **DEVELOPMENT**: Deployed dev environment with readable logs
-- **PRODUCTION**: JSON structured logs, Redis rate limiting, optimized settings
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/health` | Health check |
+| POST | `/api/v1/auth/register` | Register a new user |
+| POST | `/api/v1/auth/login` | Login to get JWT token |
+| GET | `/api/v1/songs` | List songs (pagination: `page`, `page_size`) |
+| GET | `/api/v1/songs/difficulty/average` | Average difficulty (`level` optional) |
+| GET | `/api/v1/songs/search` | Search by artist/title (`message`, `page`, `page_size`) |
+| POST | `/api/v1/songs/ratings` | Add rating (`{"song_id": "...", "rating": 1-5}`) |
+| GET | `/api/v1/songs/<song_id>/ratings` | Get rating stats |
 
-Set via `ENVIRONMENT=local|development|production`
+**Authentication & Seed Data:**
 
-### Structured Logging
+A test user is automatically seeded when you run `make seed` or `uv run flask seed-users`:
+- **Username:** `testuser`
+- **Password:** `testpass`
 
-**Development/Local:**
-```
-2025-12-17 22:52:50 | INFO     | songs_api:log_response:82 | GET /api/v1/songs - 200
-```
-
-**Production (JSON):**
-```json
-{
-  "timestamp": "2025-12-17T22:52:50.916157+03:30",
-  "level": "INFO",
-  "message": "GET /api/v1/songs - 200",
-  "request": {"method": "GET", "path": "/api/v1/songs", "remote_addr": "192.168.1.1"},
-  "status_code": 200,
-  "user": "admin"
-}
-```
-
-All requests/responses automatically logged with context, user info, and exceptions.
-
-### Rate Limiting
-
-- Default: 100 requests per minute per user/IP
-- Authenticated users tracked by username
-- Anonymous users tracked by IP address
-- Returns `429 Too Many Requests` with retry info
-- Rate limit headers included: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
-- Configurable storage: Memory (dev) or Redis (production)
-
-## API Routes (v1)
-
-All routes require JWT Authentication (except `/api/v1/health` and `/api/v1/auth/login`):
-
-| Method | Endpoint | Description | Query Params | Body |
-|--------|----------|-------------|--------------|------|
-| GET | `/api/v1/health` | Health check (no auth) | - | - |
-| POST | `/api/v1/auth/login` | Login to get JWT token (no auth) | - | `{"username": "...", "password": "..."}` |
-| GET | `/api/v1/songs` | List songs with pagination | `page`, `page_size` | - |
-| GET | `/api/v1/songs/difficulty/average` | Average difficulty | `level` (optional) | - |
-| GET | `/api/v1/songs/search` | Search by artist/title | `message`, `page`, `page_size` | - |
-| POST | `/api/v1/songs/ratings` | Add a rating | - | `{"song_id": "...", "rating": 1-5}` |
-| GET | `/api/v1/songs/<song_id>/ratings` | Get rating stats | - | - |
-
-### Authentication
-
-**Step 1: Login to get JWT token**
+**Important Security Note:** Passwords are stored as secure hashes (using Werkzeug's password hashing) in the database, never as plain text. The seed script creates a user with a hashed password, and the login endpoint verifies passwords against these hashes.
 
 ```bash
+# Register a new user
+curl -X POST http://localhost:8000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "myuser", "password": "mypassword123"}'
+
+# Login with seeded test user
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "admin"}'
+  -d '{"username": "testuser", "password": "testpass"}'
+
+# Response: {"access_token": "...", "token_type": "bearer"}
+# Use token (IMPORTANT: Include "Bearer " prefix before the token)
+curl -X GET http://localhost:8000/api/v1/songs \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN_HERE"
 ```
 
-Response:
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer"
-}
-```
+## Features
 
-**Step 2: Use token in subsequent requests**
+- **MongoEngine ODM** with schema validation
+- **Unit of Work pattern** for clean data access
+- **JWT Authentication** with PyJWT
+- **Pydantic Validation** for request/response
+- **OpenAPI/Swagger** docs at `/docs`
+- **Structured Logging** (JSON in production, colored text in dev)
+- **Rate Limiting** (per-user/IP, Redis support)
+- **Environment-aware** configuration (local/development/production)
+
+## Commands
 
 ```bash
-TOKEN="your-jwt-token-here"
-curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v1/songs
-```
-
-## Makefile Commands
-
-```bash
-make help          # Show all available commands
-make install       # Install all dependencies (including dev tools)
-make install-prod  # Install production dependencies only
-make run           # Run with gunicorn (production-like)
-make run-dev       # Run with gunicorn + auto-reload (development)
+make install       # Install dependencies
+make install-prod  # Production dependencies only
+make run           # Run with gunicorn
+make run-dev       # Run with auto-reload
 make test          # Run tests
-make test-cov      # Run tests with coverage report
-make lint          # Check code with ruff
-make lint-fix      # Auto-fix linting issues
-make format        # Format code with ruff
-make clean         # Remove generated files
+make test-cov      # Tests with coverage
+make lint          # Check code
+make lint-fix      # Auto-fix issues
+make format        # Format code
+
+# Database & Seeding
+make init-db       # Initialize database and create indexes
+make seed-songs    # Seed songs from songs.json
+make seed-users    # Seed test user (testuser/testpass)
+make seed          # Initialize DB and seed all data (songs + test user)
 ```
 
-## Run Tests
+## Seed Data
+
+The application includes seed data for development and testing:
+
+- **Songs:** Run `make seed-songs` to populate the database with songs from `songs.json`
+- **Test User:** Run `make seed-users` to create a test user:
+  - Username: `testuser`
+  - Password: `testpass`
+  - **Note:** The password is stored as a secure hash in the database (using Werkzeug's password hashing), never as plain text
+
+You can run `make seed` to initialize the database and seed all data at once.
+
+## Testing
 
 ```bash
-# Local
 make test
-
-# With coverage
 make test-cov
-
-# In Docker
+# Or in Docker:
 docker-compose run --rm api pytest
 ```
 
 ## Architecture
 
-**Layered Architecture:**
 ```
-Routes (HTTP) → Services (Business Logic) → UoW (Data Access) → MongoEngine (ODM)
+Routes → Services → UoW → MongoEngine
 ```
 
-**Key Components:**
-- **Routes** (`api/v1/routes.py`): HTTP handling, validation decorators
-- **Services** (`services/`): `AuthService`, `SongsService`, `RatingsService`
-- **Unit of Work** (`uow.py`): Repository pattern for data access
-- **Models** (`models/documents.py`): `Song`, `Rating`, `RatingStats` ODM
-- **Schemas** (`schemas.py`): Pydantic request/response validation
-- **Settings** (`settings.py`): Environment-based configuration
-- **Logging** (`logging_config.py`): Loguru with environment-specific formatting
-- **Rate Limiting** (`rate_limiter.py`): Flask-Limiter with user/IP tracking
-- **JWT Auth** (`security/jwt_auth.py`): Token generation/validation
+- **Routes** (`api/v1/routes.py`): HTTP handling, validation
+- **Services** (`services/`): Business logic
+- **Unit of Work** (`uow.py`): Repository pattern
+- **Models** (`models/documents.py`): ODM documents
+- **Settings** (`settings.py`): Environment configuration
 
 ## Deployment
 
-### Production Checklist
-
 ```bash
-# 1. Generate secure JWT secret
+# Generate JWT secret
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 
-# 2. Configure environment
+# Configure environment
 export ENVIRONMENT=production
-export JWT_SECRET_KEY=<generated-secret>
-export MONGO_URI=mongodb://user:pass@host:27017/songs_db
+export JWT_SECRET_KEY=<secret>
+export MONGO_URI=<mongo-uri>
 export LOG_FORMAT=json
 export RATE_LIMIT_STORAGE_URI=redis://redis:6379
 
-# 3. Install dependencies
+# Install and run
 make install-prod
-
-# 4. Initialize database
-export FLASK_APP=wsgi.py
-uv run flask init-db
-uv run flask seed-songs
-
-# 5. Run with gunicorn
 make run
-# Or customize:
-# gunicorn wsgi:app --bind 0.0.0.0:8000 --workers 4
 ```
 
-### Docker Deployment
+## Requirements
 
-```bash
-# Build
-docker build -t songs-api .
-
-# Run with docker-compose
-docker-compose -f docker-compose.yml up -d
-
-# Or run manually
-docker run -d \
-  -p 8000:8000 \
-  -e ENVIRONMENT=production \
-  -e MONGO_URI=mongodb://host.docker.internal:27017 \
-  -e JWT_SECRET_KEY=<your-secret> \
-  songs-api
-```
-
-### Production Requirements
-
-- **MongoDB**: Replica set recommended for production
-- **Redis**: Required for distributed rate limiting
-- **Gunicorn**: Multi-worker WSGI server (included)
-- **Reverse Proxy**: Nginx/Traefik recommended for SSL termination
-- **Monitoring**: Use JSON logs with ELK/Splunk/Datadog
-
-## Project Structure
-
-```
-songs_project/
-├── songs_api/
-│   ├── api/v1/          # API routes and error handling
-│   ├── models/          # MongoEngine documents
-│   ├── services/        # Business logic layer
-│   ├── security/        # JWT authentication
-│   ├── utils/           # Validation decorators
-│   ├── __init__.py      # Flask app factory
-│   ├── database.py      # MongoDB connection
-│   ├── logging_config.py # Loguru configuration
-│   ├── rate_limiter.py  # Rate limiting setup
-│   ├── schemas.py       # Pydantic models
-│   ├── settings.py      # Environment configuration
-│   └── uow.py           # Unit of Work pattern
-├── tests/               # Pytest test suite
-├── docs/                # Additional documentation
-├── .env.sample          # Environment variables template
-├── Makefile             # Common commands
-├── docker-compose.yml   # Docker Compose configuration
-├── Dockerfile           # Container image
-└── pyproject.toml       # Dependencies and tools
-```
-
-## Documentation
-
-- **[Configuration Guide](docs/CONFIGURATION.md)** - Complete environment configuration reference
-- **[Rate Limiting Guide](docs/RATE_LIMITING.md)** - Rate limiting details and examples
-- **[Features Overview](docs/FEATURES.md)** - Detailed features documentation
-- **Swagger UI** - Interactive API docs at `/docs` when running
+- Python 3.14+
+- MongoDB
+- uv package manager: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- Redis (optional, for production rate limiting)
 
 ## License
 
 MIT
-
-
