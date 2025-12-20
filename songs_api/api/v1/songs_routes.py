@@ -51,7 +51,8 @@ def register_songs_routes(bp: Blueprint) -> None:
             description: Validation error
         """
         response = songs_service.list_songs(page=query.page, page_size=query.page_size)
-        return jsonify(response.model_dump())
+        # Handle both Pydantic models and dicts (from cache)
+        return jsonify(response if isinstance(response, dict) else response.model_dump())
 
     @bp.route("/songs/difficulty/average", methods=["GET"])
     @requires_jwt_auth
@@ -85,7 +86,7 @@ def register_songs_routes(bp: Blueprint) -> None:
                 raise BadRequestError(message="Invalid integer for 'level'") from exc
 
         response = songs_service.get_average_difficulty(level=level)
-        return jsonify(response.model_dump())
+        return jsonify(response if isinstance(response, dict) else response.model_dump())
 
     @bp.route("/songs/search", methods=["GET"])
     @requires_jwt_auth
@@ -128,7 +129,7 @@ def register_songs_routes(bp: Blueprint) -> None:
             page=query.page,
             page_size=query.page_size,
         )
-        return jsonify(response.model_dump())
+        return jsonify(response if isinstance(response, dict) else response.model_dump())
 
     @bp.route("/songs/ratings", methods=["POST"])
     @requires_jwt_auth
@@ -169,7 +170,7 @@ def register_songs_routes(bp: Blueprint) -> None:
             description: Validation error
         """
         response = ratings_service.add_rating(song_id=data.song_id, rating=data.rating)
-        return jsonify(response.model_dump()), 201
+        return jsonify(response if isinstance(response, dict) else response.model_dump()), 201
 
     @bp.route("/songs/<song_id>/ratings", methods=["GET"])
     @requires_jwt_auth
@@ -197,4 +198,4 @@ def register_songs_routes(bp: Blueprint) -> None:
             description: Song not found
         """
         response = ratings_service.get_rating_stats(song_id=song_id)
-        return jsonify(response.model_dump())
+        return jsonify(response if isinstance(response, dict) else response.model_dump())

@@ -190,7 +190,7 @@ echo -e "\n${YELLOW}Step 9: Testing cache invalidation...${NC}"
 echo "Adding a rating (should invalidate related cache)..."
 
 # Get a song ID first
-SONG_ID=$(echo "$RESPONSE1" | jq -r '.data[0]._id')
+SONG_ID=$(echo "$RESPONSE1" | jq -r '.data[0].id')
 if [ -n "$SONG_ID" ] && [ "$SONG_ID" != "null" ]; then
     echo -e "  ${BLUE}→${NC} Using song ID: $SONG_ID"
     

@@ -9,6 +9,7 @@ from datetime import date, datetime
 from functools import wraps
 from typing import TYPE_CHECKING, Any, TypeVar
 
+from bson import ObjectId
 from loguru import logger
 
 if TYPE_CHECKING:
@@ -63,16 +64,18 @@ class Cache:
             return False
 
         try:
-            # Handle Pydantic models
+            # Handle Pydantic models - convert to dict first
             if hasattr(value, "model_dump"):
                 value = value.model_dump()
-            elif hasattr(value, "dict"):
+            elif hasattr(value, "dict") and not isinstance(value, dict):
                 value = value.dict()
             
-            # Custom JSON encoder for dates
+            # Custom JSON encoder for dates and ObjectIds
             def json_encoder(obj):
                 if isinstance(obj, (date, datetime)):
                     return obj.isoformat()
+                if isinstance(obj, ObjectId):
+                    return str(obj)
                 raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
             
             serialized = json.dumps(value, default=json_encoder)
