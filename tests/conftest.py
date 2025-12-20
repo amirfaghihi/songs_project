@@ -7,9 +7,10 @@ import pytest
 from mongoengine import connect, disconnect
 
 from songs_api import create_app
-from songs_api.models.documents import Song
+from songs_api.infrastructure import UnitOfWork
+from songs_api.models.documents import Song, User
 from songs_api.security.jwt_auth import create_access_token
-from songs_api.settings import Settings
+from songs_api.settings import Environment, Settings
 
 
 @pytest.fixture(scope="function")
@@ -35,9 +36,7 @@ def app(test_db):
         jwt_secret_key="test-secret-key",
         jwt_algorithm="HS256",
         jwt_access_token_expire_minutes=60,
-        admin_username="testuser",
-        admin_password="testpass",
-        environment="local",
+        environment=Environment.LOCAL,
         log_level="ERROR",  # Suppress logs during tests
         rate_limit_enabled=False,  # Disable rate limiting for tests
     )
@@ -45,9 +44,17 @@ def app(test_db):
     app = create_app(settings=settings)
     app.config["TESTING"] = True
 
+    # Seed test user for authentication tests
+    with app.app_context():
+        with UnitOfWork() as uow:
+            existing_user = uow.users_repository.get_by_username("testuser")
+            if not existing_user:
+                uow.users_repository.create_user(username="testuser", password="testpass")
+
     yield app
 
     Song.drop_collection()
+    User.drop_collection()
 
 
 @pytest.fixture

@@ -13,6 +13,7 @@ dependencies = [
   "flasgger>=0.9.7",
   "loguru>=0.7.0",
   "flask-limiter>=3.5.0",
+  "redis>=5.0.0",
 ]
 
 [project.optional-dependencies]
