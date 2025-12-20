@@ -1,33 +1,25 @@
 from __future__ import annotations
 
-from songs_api.api.errors import ApiError
+from songs_api.api.errors import NotFoundError
+from songs_api.infrastructure import UnitOfWork, cached, get_cache
 from songs_api.schemas import RatingStatsResponse
-from songs_api.uow import UnitOfWork
 
 
 class RatingsService:
     """Service layer for ratings-related business logic."""
 
     def add_rating(self, song_id: str, rating: int) -> RatingStatsResponse:
-        """
-        Add a rating for a song and return updated statistics.
-
-        Args:
-            song_id: MongoDB ObjectId of the song
-            rating: Rating value (1-5)
-
-        Returns:
-            RatingStatsResponse with updated statistics
-
-        Raises:
-            ApiError: If song not found (404)
-        """
+        """Add a rating for a song and return updated statistics."""
         with UnitOfWork() as uow:
-            song = uow.get_song_by_id(song_id)
+            song = uow.songs_repository.get_by_id(song_id)
             if not song:
-                raise ApiError(message="Song not found", status_code=404)
+                raise NotFoundError(message="Song not found")
 
-            stats = uow.add_rating(song_id=song_id, rating=rating)
+            stats = uow.ratings_repository.add_rating(song_id=song_id, rating=rating)
+
+        cache = get_cache()
+        if cache:
+            cache.delete(f"ratings:stats:{song_id}")
 
         average = stats.sum / stats.count if stats.count > 0 else None
 
@@ -39,25 +31,15 @@ class RatingsService:
             count=stats.count,
         )
 
+    @cached(ttl=300, key_prefix="ratings:stats")
     def get_rating_stats(self, song_id: str) -> RatingStatsResponse:
-        """
-        Get rating statistics for a song.
-
-        Args:
-            song_id: MongoDB ObjectId of the song
-
-        Returns:
-            RatingStatsResponse with statistics or zeros if no ratings exist
-
-        Raises:
-            ApiError: If song not found (404)
-        """
+        """Get rating statistics for a song."""
         with UnitOfWork() as uow:
-            song = uow.get_song_by_id(song_id)
+            song = uow.songs_repository.get_by_id(song_id)
             if not song:
-                raise ApiError(message="Song not found", status_code=404)
+                raise NotFoundError(message="Song not found")
 
-            stats = uow.get_rating_stats(song_id=song_id)
+            stats = uow.ratings_repository.get_rating_stats(song_id=song_id)
 
         if not stats:
             return RatingStatsResponse(
