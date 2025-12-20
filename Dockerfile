@@ -19,12 +19,11 @@ COPY songs_api ./songs_api
 COPY wsgi.py ./
 COPY songs.json ./
 
-ENV FLASK_APP=wsgi.py
 ENV PYTHONUNBUFFERED=1
 
 EXPOSE 5000
 
-CMD ["flask", "run", "--host=0.0.0.0"]
+CMD ["gunicorn", "wsgi:app", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120"]
 
 
 
