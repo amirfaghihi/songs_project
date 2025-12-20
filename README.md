@@ -5,21 +5,48 @@ Production-ready REST API built with Flask, MongoDB, and modern Python patterns.
 ## Quick Start
 
 ### Docker Compose (Recommended)
-```bash
-# Optional: Set MongoDB credentials via environment variables
-# export MONGO_ROOT_USERNAME=myuser
-# export MONGO_ROOT_PASSWORD=mypassword
-# Or create a .env file with these variables
 
+#### Standalone Mode (Default)
+```bash
 docker-compose up -d
-# API: http://localhost:5000
-# Swagger: http://localhost:5000/docs
+# API: http://localhost:8000
+# Swagger: http://localhost:8000/docs
+```
+
+#### With Custom Credentials
+Create a `.env` file:
+```bash
+MONGO_ROOT_USERNAME=myadmin
+MONGO_ROOT_PASSWORD=mypassword
+```
+
+Then run:
+```bash
+docker-compose up -d
+```
+
+#### With Replica Set (Production)
+Create a `.env` file:
+```bash
+MONGO_ROOT_USERNAME=root
+MONGO_ROOT_PASSWORD=adminpassword
+MONGODB_REPLICA_SET_MODE=primary
+MONGODB_REPLICA_SET_NAME=rs0
+MONGODB_REPLICA_SET_KEY=replicasetkey123
+MONGO_URI=mongodb://root:adminpassword@mongodb:27017/songs_db?authSource=admin&replicaSet=rs0
+```
+
+Then run:
+```bash
+docker-compose up -d
 ```
 
 ### Local Development
 ```bash
-# Start MongoDB
-docker run -d --name songs_db -p 27017:27017 mongo:7.0
+# Start MongoDB (Bitnami image)
+docker run -d --name songs_db -p 27017:27017 \
+  -e MONGODB_ROOT_PASSWORD=adminpassword \
+  bitnami/mongodb:latest
 
 # Install dependencies
 make install
@@ -47,10 +74,31 @@ When using Docker Compose, you can set these variables in a `.env` file or expor
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MONGO_ROOT_USERNAME` | `admin` | MongoDB root username |
+| `MONGO_ROOT_USERNAME` | `root` | MongoDB root username (customizable) |
 | `MONGO_ROOT_PASSWORD` | `adminpassword` | MongoDB root password |
 | `MONGO_DB_NAME` | `songs_db` | MongoDB database name |
 | `JWT_SECRET_KEY` | `change-this-secret-key-in-production` | JWT secret key |
+
+#### Replica Set Configuration (Optional)
+
+For production deployments with high availability:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MONGODB_REPLICA_SET_MODE` | _(empty)_ | Set to `primary` to enable replica set |
+| `MONGODB_REPLICA_SET_NAME` | `rs0` | Replica set name |
+| `MONGODB_REPLICA_SET_KEY` | `replicasetkey123` | Replica set key for security |
+| `MONGO_URI` | _(auto-built)_ | Override to include `replicaSet` parameter |
+
+**Example `.env` for Replica Set:**
+```bash
+MONGO_ROOT_USERNAME=root
+MONGO_ROOT_PASSWORD=securepassword
+MONGODB_REPLICA_SET_MODE=primary
+MONGODB_REPLICA_SET_NAME=rs0
+MONGODB_REPLICA_SET_KEY=yoursecretkey
+MONGO_URI=mongodb://root:securepassword@mongodb:27017/songs_db?authSource=admin&replicaSet=rs0
+```
 
 ### Application Environment Variables
 
@@ -59,7 +107,7 @@ When using Docker Compose, you can set these variables in a `.env` file or expor
 | `ENVIRONMENT` | `local` | Runtime: `local`, `development`, `production` |
 | `MONGO_URI` | Auto-built | MongoDB connection string (auto-built from components if not provided) |
 | `MONGO_DB_NAME` | `songs_db` | Database name |
-| `MONGO_ROOT_USERNAME` | `admin` | MongoDB root username (used to build MONGO_URI) |
+| `MONGO_ROOT_USERNAME` | `root` | MongoDB root username (Bitnami default, used to build MONGO_URI) |
 | `MONGO_ROOT_PASSWORD` | `adminpassword` | MongoDB root password (used to build MONGO_URI) |
 | `MONGO_HOST` | `localhost` | MongoDB host (used to build MONGO_URI) |
 | `MONGO_PORT` | `27017` | MongoDB port (used to build MONGO_URI) |
@@ -69,10 +117,29 @@ When using Docker Compose, you can set these variables in a `.env` file or expor
 | `RATE_LIMIT_DEFAULT` | `100 per minute` | Default rate limit |
 | `RATE_LIMIT_STORAGE_URI` | `memory://` | `memory://` (dev) or `redis://host:port` (production) |
 
-**Production example:**
+**Note:** When using Bitnami MongoDB, the root username is `root`, not `admin`.
+
+**Production examples:**
+
+Standalone MongoDB:
 ```bash
 ENVIRONMENT=production
-MONGO_URI=mongodb://user:pass@host:27017/songs_db
+MONGO_ROOT_USERNAME=prodadmin
+MONGO_ROOT_PASSWORD=secure_password
+MONGO_URI=mongodb://prodadmin:secure_password@host:27017/songs_db?authSource=admin
+JWT_SECRET_KEY=<generated-secret>
+LOG_FORMAT=json
+RATE_LIMIT_STORAGE_URI=redis://redis:6379
+```
+
+With Replica Set:
+```bash
+ENVIRONMENT=production
+MONGO_ROOT_USERNAME=prodadmin
+MONGO_ROOT_PASSWORD=secure_password
+MONGODB_REPLICA_SET_MODE=primary
+MONGODB_REPLICA_SET_NAME=rs0
+MONGO_URI=mongodb://prodadmin:secure_password@host:27017/songs_db?authSource=admin&replicaSet=rs0
 JWT_SECRET_KEY=<generated-secret>
 LOG_FORMAT=json
 RATE_LIMIT_STORAGE_URI=redis://redis:6379
@@ -203,9 +270,37 @@ make run
 ## Requirements
 
 - Python 3.14+
-- MongoDB
+- MongoDB (Bitnami MongoDB image recommended for Docker deployments)
 - uv package manager: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 - Redis (optional, for production rate limiting)
+
+## Technology Stack
+
+- **Database:** Bitnami MongoDB 8.2+ (Docker)
+  - Default admin username: `root` (customizable)
+  - Supports standalone and replica set modes
+  - Authentication enabled by default
+- **Web Framework:** Flask with Gunicorn WSGI server (4 workers)
+- **ODM:** MongoEngine for MongoDB object-document mapping
+- **Authentication:** JWT tokens with PyJWT
+- **Validation:** Pydantic for request/response schemas
+- **Package Manager:** uv for fast dependency management
+
+## MongoDB Configuration Modes
+
+### Standalone Mode (Development)
+- Single MongoDB instance
+- No replica set configuration
+- Suitable for local development and testing
+- Default configuration
+
+### Replica Set Mode (Production)
+- High availability with automatic failover
+- Data redundancy across multiple nodes
+- Requires setting `MONGODB_REPLICA_SET_MODE=primary`
+- Include `replicaSet` parameter in `MONGO_URI`
+
+**Note:** For multi-node replica sets in production, you'll need multiple MongoDB containers. The current docker-compose.yml supports a single-node replica set, which enables replica set features for compatibility but doesn't provide actual redundancy.
 
 ## License
 
