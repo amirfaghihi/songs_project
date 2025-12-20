@@ -69,7 +69,7 @@ class Cache:
                 value = value.model_dump()
             elif hasattr(value, "dict") and not isinstance(value, dict):
                 value = value.dict()
-            
+
             # Custom JSON encoder for dates and ObjectIds
             def json_encoder(obj):
                 if isinstance(obj, (date, datetime)):
@@ -77,7 +77,7 @@ class Cache:
                 if isinstance(obj, ObjectId):
                     return str(obj)
                 raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
-            
+
             serialized = json.dumps(value, default=json_encoder)
             self.redis_client.setex(key, ttl, serialized)
             return True

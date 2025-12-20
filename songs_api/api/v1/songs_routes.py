@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
 
+from songs_api.api.caching import cached_response
 from songs_api.api.errors import BadRequestError
 from songs_api.schemas import (
     AddRatingRequest,
@@ -22,6 +23,7 @@ def register_songs_routes(bp: Blueprint) -> None:
     @bp.route("/songs", methods=["GET"])
     @requires_jwt_auth
     @validate_query(PaginationQueryParams)
+    @cached_response("songs:list", ttl=300)
     @inject(SongsService)
     def list_songs(query: PaginationQueryParams, songs_service: SongsService):
         """
@@ -51,11 +53,11 @@ def register_songs_routes(bp: Blueprint) -> None:
             description: Validation error
         """
         response = songs_service.list_songs(page=query.page, page_size=query.page_size)
-        # Handle both Pydantic models and dicts (from cache)
-        return jsonify(response if isinstance(response, dict) else response.model_dump())
+        return jsonify(response.model_dump())
 
     @bp.route("/songs/difficulty/average", methods=["GET"])
     @requires_jwt_auth
+    @cached_response("songs:avg_difficulty", ttl=600)
     @inject(SongsService)
     def average_difficulty(songs_service: SongsService):
         """
@@ -86,11 +88,12 @@ def register_songs_routes(bp: Blueprint) -> None:
                 raise BadRequestError(message="Invalid integer for 'level'") from exc
 
         response = songs_service.get_average_difficulty(level=level)
-        return jsonify(response if isinstance(response, dict) else response.model_dump())
+        return jsonify(response.model_dump())
 
     @bp.route("/songs/search", methods=["GET"])
     @requires_jwt_auth
     @validate_query(SearchQueryParams)
+    @cached_response("songs:search", ttl=600)
     @inject(SongsService)
     def search_songs(query: SearchQueryParams, songs_service: SongsService):
         """
@@ -129,7 +132,7 @@ def register_songs_routes(bp: Blueprint) -> None:
             page=query.page,
             page_size=query.page_size,
         )
-        return jsonify(response if isinstance(response, dict) else response.model_dump())
+        return jsonify(response.model_dump())
 
     @bp.route("/songs/ratings", methods=["POST"])
     @requires_jwt_auth
@@ -170,10 +173,11 @@ def register_songs_routes(bp: Blueprint) -> None:
             description: Validation error
         """
         response = ratings_service.add_rating(song_id=data.song_id, rating=data.rating)
-        return jsonify(response if isinstance(response, dict) else response.model_dump()), 201
+        return jsonify(response.model_dump()), 201
 
     @bp.route("/songs/<song_id>/ratings", methods=["GET"])
     @requires_jwt_auth
+    @cached_response("ratings:stats", ttl=300)
     @inject(RatingsService)
     def get_rating_stats(ratings_service: RatingsService, song_id: str):
         """
@@ -198,4 +202,4 @@ def register_songs_routes(bp: Blueprint) -> None:
             description: Song not found
         """
         response = ratings_service.get_rating_stats(song_id=song_id)
-        return jsonify(response if isinstance(response, dict) else response.model_dump())
+        return jsonify(response.model_dump())

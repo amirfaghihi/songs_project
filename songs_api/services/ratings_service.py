@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from songs_api.api.errors import NotFoundError
-from songs_api.infrastructure import UnitOfWork, cached, get_cache
+from songs_api.infrastructure import UnitOfWork, get_cache
 from songs_api.schemas import RatingStatsResponse
 
 
@@ -31,7 +31,6 @@ class RatingsService:
             count=stats.count,
         )
 
-    @cached(ttl=300, key_prefix="ratings:stats")
     def get_rating_stats(self, song_id: str) -> RatingStatsResponse:
         """Get rating statistics for a song."""
         with UnitOfWork() as uow:
