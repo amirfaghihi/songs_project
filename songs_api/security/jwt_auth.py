@@ -8,7 +8,8 @@ from typing import Any
 import jwt
 from flask import current_app, request
 
-from songs_api.api.errors import ApiError
+from songs_api.api.errors import UnauthorizedError
+from songs_api.constants import JWTClaim
 
 
 def create_access_token(username: str) -> str:
@@ -19,9 +20,9 @@ def create_access_token(username: str) -> str:
 
     expire = datetime.now(UTC) + timedelta(minutes=expire_minutes)
     payload = {
-        "sub": username,
-        "exp": expire,
-        "iat": datetime.now(UTC),
+        JWTClaim.SUBJECT.value: username,
+        JWTClaim.EXPIRATION.value: expire,
+        JWTClaim.ISSUED_AT.value: datetime.now(UTC),
     }
     token = jwt.encode(payload, secret_key, algorithm=algorithm)
     return token
@@ -34,14 +35,14 @@ def verify_access_token(token: str) -> str:
 
     try:
         payload = jwt.decode(token, secret_key, algorithms=[algorithm])
-        username: str = payload.get("sub", "")
+        username: str = payload.get(JWTClaim.SUBJECT.value, "")
         if not username:
-            raise ApiError(message="Invalid token", status_code=401)
+            raise UnauthorizedError(message="Invalid token")
         return username
     except jwt.ExpiredSignatureError as exc:
-        raise ApiError(message="Token has expired", status_code=401) from exc
+        raise UnauthorizedError(message="Token has expired") from exc
     except jwt.InvalidTokenError as exc:
-        raise ApiError(message="Invalid token", status_code=401) from exc
+        raise UnauthorizedError(message="Invalid token") from exc
 
 
 def requires_jwt_auth[F: Callable[..., Any]](fn: F) -> F:
@@ -49,13 +50,20 @@ def requires_jwt_auth[F: Callable[..., Any]](fn: F) -> F:
 
     @wraps(fn)
     def wrapper(*args: Any, **kwargs: Any):
-        auth_header = request.headers.get("Authorization", "")
-        if not auth_header.startswith("Bearer "):
-            raise ApiError(message="Missing or invalid authorization header", status_code=401)
+        auth_header = request.headers.get("Authorization", "").strip()
 
-        token = auth_header.split(" ", 1)[1] if " " in auth_header else ""
+        if not auth_header:
+            raise UnauthorizedError(
+                message="Missing authorization header. Expected format: 'Authorization: Bearer <token>'"
+            )
+
+        parts = auth_header.split(" ", 1)
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            raise UnauthorizedError(message="Invalid authorization header format. Expected: 'Bearer <token>'")
+
+        token = parts[1].strip()
         if not token:
-            raise ApiError(message="Missing token", status_code=401)
+            raise UnauthorizedError(message="Missing token in authorization header")
 
         username = verify_access_token(token)
         request.jwt_username = username

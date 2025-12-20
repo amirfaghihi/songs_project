@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from mongoengine import DateField, Document, FloatField, IntField, StringField
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 class Song(Document):
@@ -23,6 +24,8 @@ class Song(Document):
                 "default_language": "english",
                 "weights": {"artist": 10, "title": 10},
             },
+            ("level", "difficulty"),
+            ("artist", "released"),
         ],
     }
 
@@ -46,3 +49,20 @@ class RatingStats(Document):
     max = IntField(default=1)
 
     meta = {"collection": "rating_stats", "indexes": ["song_id"]}
+
+
+class User(Document):
+    """User document model for MongoDB."""
+
+    username = StringField(required=True, unique=True)
+    password_hash = StringField(required=True)
+
+    meta = {"collection": "users", "indexes": ["username"]}
+
+    def set_password(self, password: str) -> None:
+        """Set password hash."""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        """Check password against hash."""
+        return check_password_hash(self.password_hash, password)
