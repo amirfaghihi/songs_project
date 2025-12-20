@@ -2,22 +2,33 @@ version: '3.8'
 
 services:
   mongodb:
-    image: mongo:7.0
+    image: bitnami/mongodb:7.0
     container_name: songs_mongodb
     restart: unless-stopped
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_DATABASE: songs_db
+      # Authentication
+      MONGODB_ROOT_USER: ${MONGO_ROOT_USERNAME:-admin}
+      MONGODB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-adminpassword}
+      MONGODB_DATABASE: ${MONGO_DB_NAME:-songs_db}
+      # Replicaset configuration for high availability
+      MONGODB_REPLICA_SET_MODE: primary
+      MONGODB_REPLICA_SET_NAME: rs0
+      MONGODB_REPLICA_SET_KEY: replicasetkey123
+      # Performance settings
+      MONGODB_ENABLE_JOURNAL: "yes"
+      MONGODB_ENABLE_DIRECTORY_PER_DB: "no"
     volumes:
-      - mongodb_data:/data/db
+      - mongodb_data:/bitnami/mongodb
     networks:
       - songs_network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "-u", "${MONGO_ROOT_USERNAME:-admin}", "-p", "${MONGO_ROOT_PASSWORD:-adminpassword}", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 40s
 
   api:
     build:
@@ -30,11 +41,12 @@ services:
     environment:
       - FLASK_APP=wsgi.py
       - FLASK_ENV=development
-      - MONGO_URI=mongodb://mongodb:27017
-      - MONGO_DB_NAME=songs_db
-      - JWT_SECRET_KEY=change-this-secret-key-in-production
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=admin
+      # Connection string with replicaset support
+      - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-adminpassword}@mongodb:27017/${MONGO_DB_NAME:-songs_db}?authSource=admin&replicaSet=rs0
+      - MONGO_DB_NAME=${MONGO_DB_NAME:-songs_db}
+      - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME:-admin}
+      - MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-adminpassword}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-this-secret-key-in-production}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -56,6 +68,8 @@ volumes:
 networks:
   songs_network:
     driver: bridge
+
+
 
 
 
