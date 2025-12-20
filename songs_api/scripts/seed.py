@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 from datetime import date
 
-from songs_api.database import ensure_indexes
+from songs_api.infrastructure import ensure_indexes, init_db
 from songs_api.models.documents import Song
+from songs_api.settings import Settings
 
 
 def seed_songs_from_file(file_path: str) -> None:
@@ -38,3 +39,9 @@ def seed_songs_from_file(file_path: str) -> None:
         print(f"Seeded {len(songs)} songs into the database.")
     else:
         print("No songs to seed.")
+
+
+if __name__ == "__main__":
+    settings = Settings()
+    init_db(mongo_uri=settings.mongo_uri, db_name=settings.mongo_db_name)
+    seed_songs_from_file(settings.songs_json_path)

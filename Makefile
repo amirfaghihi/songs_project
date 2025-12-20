@@ -56,6 +56,17 @@ test: ## Run tests with pytest
 test-cov: ## Run tests with coverage
 	$(UV) run pytest --cov=songs_api --cov-report=html --cov-report=term
 
+init-db: ## Initialize database and create indexes
+	$(UV) run python -m songs_api.scripts.init_db
+
+seed-songs: ## Seed songs data from songs.json
+	$(UV) run python -m songs_api.scripts.seed
+
+seed-users: ## Seed test user (username: testuser, password: testpass)
+	$(UV) run python -m songs_api.scripts.seed_users
+
+seed: init-db seed-songs seed-users ## Initialize database and seed all data (songs + test user)
+
 clean: ## Clean up generated files
 	find . -type d -name "__pycache__" -exec rm -r {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete
