@@ -7,16 +7,11 @@ from typing import Any
 from flask import jsonify, request
 from pydantic import BaseModel, ValidationError
 
+from songs_api.constants import HTTPStatusCode
+
 
 def validate_request[T: BaseModel, F: Callable[..., Any]](model: type[T]) -> Callable[[F], F]:
-    """
-    Decorator to automatically validate request JSON against a Pydantic model.
-
-    Usage:
-        @validate_request(MyRequestModel)
-        def my_endpoint(data: MyRequestModel):
-            # data is already validated
-    """
+    """Decorator to validate request JSON against a Pydantic model."""
 
     def decorator(f: F) -> F:
         @wraps(f)
@@ -24,12 +19,12 @@ def validate_request[T: BaseModel, F: Callable[..., Any]](model: type[T]) -> Cal
             try:
                 json_data = request.get_json()
                 if json_data is None:
-                    return jsonify({"error": "Request body must be JSON"}), 400
+                    return jsonify({"error": "Request body must be JSON"}), HTTPStatusCode.BAD_REQUEST
                 validated_data = model(**json_data)
             except ValidationError as e:
-                return jsonify({"errors": e.errors()}), 422
+                return jsonify({"errors": e.errors()}), HTTPStatusCode.UNPROCESSABLE_ENTITY
             except Exception as e:
-                return jsonify({"error": str(e)}), 400
+                return jsonify({"error": str(e)}), HTTPStatusCode.BAD_REQUEST
 
             return f(validated_data, *args, **kwargs)
 
@@ -39,14 +34,7 @@ def validate_request[T: BaseModel, F: Callable[..., Any]](model: type[T]) -> Cal
 
 
 def validate_query[T: BaseModel, F: Callable[..., Any]](model: type[T]) -> Callable[[F], F]:
-    """
-    Decorator to automatically validate query parameters against a Pydantic model.
-
-    Usage:
-        @validate_query(MyQueryModel)
-        def my_endpoint(query: MyQueryModel):
-            # query is already validated
-    """
+    """Decorator to validate query parameters against a Pydantic model."""
 
     def decorator(f: F) -> F:
         @wraps(f)
@@ -55,9 +43,9 @@ def validate_query[T: BaseModel, F: Callable[..., Any]](model: type[T]) -> Calla
                 query_data = request.args.to_dict()
                 validated_data = model(**query_data)
             except ValidationError as e:
-                return jsonify({"errors": e.errors()}), 422
+                return jsonify({"errors": e.errors()}), HTTPStatusCode.UNPROCESSABLE_ENTITY
             except Exception as e:
-                return jsonify({"error": str(e)}), 400
+                return jsonify({"error": str(e)}), HTTPStatusCode.BAD_REQUEST
 
             return f(validated_data, *args, **kwargs)
 

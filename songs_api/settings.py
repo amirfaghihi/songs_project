@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from enum import Enum
 
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from songs_api.constants import LogFormat, LogLevel, PaginationDefaults
 
 
 class Environment(str, Enum):
@@ -14,61 +17,73 @@ class Environment(str, Enum):
 
 
 class Settings(BaseSettings):
-    """
-    Application settings loaded from environment variables.
-
-    Field names are automatically mapped to uppercase environment variables.
-    For example: mongo_uri -> MONGO_URI, jwt_secret_key -> JWT_SECRET_KEY
-    """
+    """Application settings loaded from environment variables."""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    # Environment
     environment: Environment = Environment.LOCAL
 
-    # MongoDB Configuration
-    mongo_uri: str = "mongodb://localhost:27017"
     mongo_db_name: str = "songs_db"
+    mongo_uri: str | None = Field(default=None, description="MongoDB URI (built from components if not provided)")
+    mongo_root_username: str = "admin"
+    mongo_root_password: str = "adminpassword"
+    mongo_host: str = "localhost"
+    mongo_port: int = 27017
 
-    # Songs Data
     songs_json_path: str = "songs.json"
 
-    # Pagination
-    max_page_size: int = 100
+    max_page_size: int = PaginationDefaults.MAX_PAGE_SIZE
 
-    # JWT Configuration
     jwt_secret_key: str = "your-secret-key-change-in-production"
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 60
 
-    # Admin Credentials
-    admin_username: str = "admin"
-    admin_password: str = "admin"
+    @model_validator(mode="after")
+    def build_mongo_uri(self) -> Settings:
+        """Build mongo_uri from components if not explicitly provided."""
+        if self.mongo_uri is None:
+            if self.mongo_root_username and self.mongo_root_password:
+                self.mongo_uri = (
+                    f"mongodb://{self.mongo_root_username}:{self.mongo_root_password}"
+                    f"@{self.mongo_host}:{self.mongo_port}/{self.mongo_db_name}?authSource=admin"
+                )
+            else:
+                self.mongo_uri = f"mongodb://{self.mongo_host}:{self.mongo_port}"
+        return self
 
-    # API Metadata
     api_title: str = "Songs API"
     api_version: str = "1.0.0"
 
-    # Logging
-    log_level: str = "INFO"
-    log_format: str = "text"  # "text" or "json"
+    log_level: str = LogLevel.INFO.value
+    log_format: str = LogFormat.TEXT.value
 
-    # Rate Limiting
     rate_limit_enabled: bool = True
     rate_limit_default: str = "100 per minute"
-    rate_limit_storage_uri: str = "memory://"
+    rate_limit_redis_url: str = "redis://localhost:6379/1"
+    rate_limit_storage_uri: str | None = None
+
+    cache_enabled: bool = True
+    cache_redis_url: str = "redis://localhost:6379/0"
+    cache_default_ttl: int = 300
+
+    @model_validator(mode="after")
+    def configure_rate_limit_storage(self) -> Settings:
+        """Configure rate limit storage based on environment."""
+        if self.rate_limit_storage_uri is None:
+            if self.environment == Environment.PRODUCTION:
+                self.rate_limit_storage_uri = self.rate_limit_redis_url
+            else:
+                self.rate_limit_storage_uri = "memory://"
+        return self
 
     @property
     def is_production(self) -> bool:
-        """Check if running in production environment."""
         return self.environment == Environment.PRODUCTION
 
     @property
     def is_development(self) -> bool:
-        """Check if running in development environment."""
         return self.environment == Environment.DEVELOPMENT
 
     @property
     def is_local(self) -> bool:
-        """Check if running in local environment."""
         return self.environment == Environment.LOCAL
