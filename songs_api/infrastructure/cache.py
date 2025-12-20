@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Callable
+from datetime import date, datetime
 from functools import wraps
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -62,7 +63,19 @@ class Cache:
             return False
 
         try:
-            serialized = json.dumps(value)
+            # Handle Pydantic models
+            if hasattr(value, "model_dump"):
+                value = value.model_dump()
+            elif hasattr(value, "dict"):
+                value = value.dict()
+            
+            # Custom JSON encoder for dates
+            def json_encoder(obj):
+                if isinstance(obj, (date, datetime)):
+                    return obj.isoformat()
+                raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+            
+            serialized = json.dumps(value, default=json_encoder)
             self.redis_client.setex(key, ttl, serialized)
             return True
         except Exception as e:
