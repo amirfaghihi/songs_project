@@ -6,10 +6,14 @@ services:
     ports:
       - "27017:27017"
     environment:
-      # Authentication
-      MONGODB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      # Authentication (Bitnami default is 'root', but can be customized)
+      MONGODB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-root}
       MONGODB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-adminpassword}
       MONGODB_DATABASE: ${MONGO_DB_NAME:-songs_db}
+      # Replica Set configuration for high availability
+      MONGODB_REPLICA_SET_MODE: ${MONGODB_REPLICA_SET_MODE:-}
+      MONGODB_REPLICA_SET_NAME: ${MONGODB_REPLICA_SET_NAME:-rs0}
+      MONGODB_REPLICA_SET_KEY: ${MONGODB_REPLICA_SET_KEY:-replicasetkey123}
     volumes:
       - mongodb_data:/bitnami/mongodb
     networks:
@@ -32,10 +36,12 @@ services:
     environment:
       - FLASK_APP=wsgi.py
       - FLASK_ENV=development
-      # Connection string with authentication (Bitnami uses 'root' as username)
-      - MONGO_URI=mongodb://root:${MONGO_ROOT_PASSWORD:-adminpassword}@mongodb:27017/${MONGO_DB_NAME:-songs_db}?authSource=admin
+      # Connection string - can be overridden via MONGO_URI environment variable
+      # Default: standalone mode without replica set
+      # For replica set, set MONGO_URI with replicaSet parameter in your .env file
+      - MONGO_URI=${MONGO_URI:-mongodb://${MONGO_ROOT_USERNAME:-root}:${MONGO_ROOT_PASSWORD:-adminpassword}@mongodb:27017/${MONGO_DB_NAME:-songs_db}?authSource=admin}
       - MONGO_DB_NAME=${MONGO_DB_NAME:-songs_db}
-      - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME:-admin}
+      - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME:-root}
       - MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-adminpassword}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-this-secret-key-in-production}
     depends_on:
