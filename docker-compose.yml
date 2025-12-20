@@ -10,24 +10,16 @@ services:
       MONGODB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
       MONGODB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-adminpassword}
       MONGODB_DATABASE: ${MONGO_DB_NAME:-songs_db}
-      # Replicaset configuration for high availability
-      MONGODB_REPLICA_SET_MODE: primary
-      MONGODB_REPLICA_SET_NAME: rs0
-      MONGODB_REPLICA_SET_KEY: replicasetkey123
-      # Performance settings
-      MONGODB_ENABLE_JOURNAL: "yes"
-      MONGODB_ENABLE_DIRECTORY_PER_DB: "no"
     volumes:
       - mongodb_data:/bitnami/mongodb
     networks:
       - songs_network
-    user: "0"
     healthcheck:
-      test: ["CMD", "mongosh", "-u", "${MONGO_ROOT_USERNAME:-admin}", "-p", "${MONGO_ROOT_PASSWORD:-adminpassword}", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 60s
 
   api:
     build:
@@ -36,12 +28,12 @@ services:
     container_name: songs_api
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "8000:5000"
     environment:
       - FLASK_APP=wsgi.py
       - FLASK_ENV=development
-      # Connection string with replicaset support
-      - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-adminpassword}@mongodb:27017/${MONGO_DB_NAME:-songs_db}?authSource=admin&replicaSet=rs0
+      # Connection string with authentication (Bitnami uses 'root' as username)
+      - MONGO_URI=mongodb://root:${MONGO_ROOT_PASSWORD:-adminpassword}@mongodb:27017/${MONGO_DB_NAME:-songs_db}?authSource=admin
       - MONGO_DB_NAME=${MONGO_DB_NAME:-songs_db}
       - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME:-admin}
       - MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-adminpassword}
