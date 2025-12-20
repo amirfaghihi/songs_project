@@ -1,15 +1,13 @@
-version: '3.8'
-
 services:
   mongodb:
-    image: bitnami/mongodb:7.0
+    image: docker.io/bitnami/mongodb:latest
     container_name: songs_mongodb
     restart: unless-stopped
     ports:
       - "27017:27017"
     environment:
       # Authentication
-      MONGODB_ROOT_USER: ${MONGO_ROOT_USERNAME:-admin}
+      MONGODB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
       MONGODB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-adminpassword}
       MONGODB_DATABASE: ${MONGO_DB_NAME:-songs_db}
       # Replicaset configuration for high availability
@@ -23,6 +21,7 @@ services:
       - mongodb_data:/bitnami/mongodb
     networks:
       - songs_network
+    user: "0"
     healthcheck:
       test: ["CMD", "mongosh", "-u", "${MONGO_ROOT_USERNAME:-admin}", "-p", "${MONGO_ROOT_PASSWORD:-adminpassword}", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
       interval: 10s
