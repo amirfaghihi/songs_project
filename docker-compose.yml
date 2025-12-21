@@ -6,7 +6,6 @@ services:
     ports:
       - "27017:27017"
     environment:
-      # Authentication (Bitnami default is 'root', but can be customized)
       MONGODB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-root}
       MONGODB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-adminpassword}
       MONGODB_DATABASE: ${MONGO_DB_NAME:-songs_db}

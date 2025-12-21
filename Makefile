@@ -9,23 +9,22 @@ PORT := 8000
 WORKERS := $(or $(word 2, $(MAKECMDGOALS)), 4)
 TIMEOUT := 120
 
-# Prevent Make from trying to build the workers number as a target
 ifneq ($(filter-out run run-dev,$(MAKECMDGOALS)),)
   $(filter-out run run-dev,$(MAKECMDGOALS)):
 	@:
 endif
 
-help: ## Show this help message
+help: 
 	@echo "Available targets:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-install: ## Install all dependencies (including dev) using uv
+install:
 	$(UV) sync --extra dev
 
-install-prod: ## Install production dependencies only
+install-prod:
 	$(UV) sync
 
-run: ## Run the application with gunicorn (usage: make run [N] where N is number of workers, default: 4)
+run:
 	$(UV) run gunicorn $(APP_MODULE) \
 		--bind $(HOST):$(PORT) \
 		--workers $(WORKERS) \
@@ -34,7 +33,7 @@ run: ## Run the application with gunicorn (usage: make run [N] where N is number
 		--error-logfile - \
 		--log-level info
 
-run-dev: ## Run the application with gunicorn in development mode (reload on changes, usage: make run-dev [N])
+run-dev:
 	$(UV) run gunicorn $(APP_MODULE) \
 		--bind $(HOST):$(PORT) \
 		--workers $(WORKERS) \
@@ -44,36 +43,36 @@ run-dev: ## Run the application with gunicorn in development mode (reload on cha
 		--error-logfile - \
 		--log-level debug
 
-lint: ## Run linting checks with ruff
+lint:
 	$(UV) run ruff check .
 
-lint-fix: ## Run ruff check and auto-fix issues
+lint-fix:
 	$(UV) run ruff check --fix .
 
-format: ## Format code with ruff
+format:
 	$(UV) run ruff format .
 
-check: lint ## Run all checks (linting)
+check: lint
 	@echo "All checks passed!"
 
-test: ## Run tests with pytest
+test:
 	$(UV) run pytest
 
-test-cov: ## Run tests with coverage
+test-cov:
 	$(UV) run pytest --cov=songs_api --cov-report=html --cov-report=term
 
-init-db: ## Initialize database and create indexes
+init-db:
 	$(UV) run python -m songs_api.scripts.init_db
 
-seed-songs: ## Seed songs data from songs.json
+seed-songs:
 	$(UV) run python -m songs_api.scripts.seed
 
-seed-users: ## Seed test user (username: testuser, password: testpass)
+seed-users:
 	$(UV) run python -m songs_api.scripts.seed_users
 
-seed: init-db seed-songs seed-users ## Initialize database and seed all data (songs + test user)
+seed: init-db seed-songs seed-users
 
-clean: ## Clean up generated files
+clean:
 	find . -type d -name "__pycache__" -exec rm -r {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete
 	find . -type f -name "*.pyo" -delete
