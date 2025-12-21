@@ -118,6 +118,7 @@ MONGO_URI=mongodb://root:securepassword@mongodb:27017/songs_db?authSource=admin&
 | `MONGO_ROOT_PASSWORD` | `adminpassword` | MongoDB root password (used to build MONGO_URI) |
 | `MONGO_HOST` | `localhost` | MongoDB host (used to build MONGO_URI) |
 | `MONGO_PORT` | `27017` | MongoDB port (used to build MONGO_URI) |
+| `MONGO_REPLICA_SET_NAME` | _(none)_ | MongoDB replica set name (e.g., `rs0`). If set, adds `replicaSet` parameter to MONGO_URI |
 | `JWT_SECRET_KEY` | - | **Required** - Generate: `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
 | `LOG_FORMAT` | `text` | `text` (dev) or `json` (production) |
 | `RATE_LIMIT_ENABLED` | `true` | Enable rate limiting |

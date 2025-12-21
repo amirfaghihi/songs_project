@@ -25,10 +25,11 @@ class Settings(BaseSettings):
 
     mongo_db_name: str = "songs_db"
     mongo_uri: str | None = Field(default=None, description="MongoDB URI (built from components if not provided)")
-    mongo_root_username: str = "admin"
+    mongo_root_username: str = "root"
     mongo_root_password: str = "adminpassword"
     mongo_host: str = "localhost"
     mongo_port: int = 27017
+    mongo_replica_set_name: str | None = Field(default=None, description="MongoDB replica set name (e.g., 'rs0')")
 
     songs_json_path: str = "songs.json"
 
@@ -42,13 +43,23 @@ class Settings(BaseSettings):
     def build_mongo_uri(self) -> Settings:
         """Build mongo_uri from components if not explicitly provided."""
         if self.mongo_uri is None:
+            # Build query parameters
+            query_params = []
+            if self.mongo_root_username and self.mongo_root_password:
+                query_params.append("authSource=admin")
+            if self.mongo_replica_set_name:
+                query_params.append(f"replicaSet={self.mongo_replica_set_name}")
+
+            query_string = "&".join(query_params) if query_params else ""
+            query_prefix = "?" if query_string else ""
+
             if self.mongo_root_username and self.mongo_root_password:
                 self.mongo_uri = (
                     f"mongodb://{self.mongo_root_username}:{self.mongo_root_password}"
-                    f"@{self.mongo_host}:{self.mongo_port}/{self.mongo_db_name}?authSource=admin"
+                    f"@{self.mongo_host}:{self.mongo_port}/{self.mongo_db_name}{query_prefix}{query_string}"
                 )
             else:
-                self.mongo_uri = f"mongodb://{self.mongo_host}:{self.mongo_port}"
+                self.mongo_uri = f"mongodb://{self.mongo_host}:{self.mongo_port}{query_prefix}{query_string}"
         return self
 
     api_title: str = "Songs API"
