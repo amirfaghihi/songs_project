@@ -8,12 +8,26 @@ from songs_api.models.documents import Song
 from songs_api.repositories.base_repository import BaseRepository
 
 if TYPE_CHECKING:
+    from pymongo.client_session import ClientSession
+
     from songs_api.infrastructure.cache import Cache
 
 
 class SongsRepository(BaseRepository):
-    def __init__(self, cache_service: Cache | None = None):
-        super().__init__(cache_service)
+    def __init__(self, cache_service: Cache | None = None, mongo_session: ClientSession | None = None):
+        super().__init__(cache_service, mongo_session=mongo_session)
+
+    def bulk_insert(self, songs: list[Song], *, load_bulk: bool = False) -> None:
+        if not songs:
+            return
+        # Not all mongoengine versions support `session=` for QuerySet.insert().
+        if self.mongo_session is None:
+            Song.objects.insert(songs, load_bulk=load_bulk)
+            return
+        try:
+            Song.objects.insert(songs, load_bulk=load_bulk, session=self.mongo_session)
+        except TypeError:
+            Song.objects.insert(songs, load_bulk=load_bulk)
 
     def list_songs(self, skip: int, limit: int) -> tuple[list[Song], int]:
         total = Song.objects.count()
