@@ -7,7 +7,7 @@ from songs_api.schemas import RatingStatsResponse
 
 class RatingsService:
     def add_rating(self, song_id: str, rating: int) -> RatingStatsResponse:
-        with UnitOfWork() as uow:
+        with UnitOfWork(use_transactions=True) as uow:
             song = uow.songs_repository.get_by_id(song_id)
             if not song:
                 raise NotFoundError(message="Song not found")
