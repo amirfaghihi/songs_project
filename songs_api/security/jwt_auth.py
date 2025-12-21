@@ -47,6 +47,7 @@ def verify_access_token(token: str) -> str:
 
 def requires_jwt_auth[F: Callable[..., Any]](fn: F) -> F:
     """Decorator to require valid JWT token in Authorization header."""
+
     @wraps(fn)
     def wrapper(*args: Any, **kwargs: Any):
         auth_header = request.headers.get("Authorization", "").strip()

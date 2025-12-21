@@ -11,6 +11,7 @@ from songs_api.infrastructure import cache_key, get_cache
 
 def cached_response(prefix: str, ttl: int = 300):
     """Cache route responses using request args and kwargs as cache key."""
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:

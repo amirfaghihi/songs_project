@@ -12,6 +12,7 @@ from songs_api.constants import HTTPStatusCode
 
 def validate_request[T: BaseModel, F: Callable[..., Any]](model: type[T]) -> Callable[[F], F]:
     """Validate request JSON body against Pydantic model."""
+
     def decorator(f: F) -> F:
         @wraps(f)
         def wrapped(*args: Any, **kwargs: Any):
@@ -34,6 +35,7 @@ def validate_request[T: BaseModel, F: Callable[..., Any]](model: type[T]) -> Cal
 
 def validate_query[T: BaseModel, F: Callable[..., Any]](model: type[T]) -> Callable[[F], F]:
     """Validate query parameters against Pydantic model."""
+
     def decorator(f: F) -> F:
         @wraps(f)
         def wrapped(*args: Any, **kwargs: Any):

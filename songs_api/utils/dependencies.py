@@ -9,6 +9,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 def inject(*dependency_classes: type) -> Callable[[F], F]:
     """Inject dependencies into route handler. Instantiates classes or calls from_request() if available."""
+
     def decorator(f: F) -> F:
         @wraps(f)
         def wrapper(*args: Any, **kwargs: Any) -> Any:

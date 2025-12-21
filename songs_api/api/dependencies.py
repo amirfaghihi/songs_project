@@ -30,4 +30,3 @@ class AuthUser:
 
         username = verify_access_token(token)
         return cls(username=username)
-

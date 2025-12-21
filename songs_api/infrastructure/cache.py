@@ -62,6 +62,7 @@ class Cache:
                 value = value.model_dump()
             elif hasattr(value, "dict") and not isinstance(value, dict):
                 value = value.dict()
+
             def json_encoder(obj):
                 if isinstance(obj, (date, datetime)):
                     return obj.isoformat()
@@ -131,6 +132,7 @@ def cache_key(*args: Any, prefix: str = "") -> str:
 
 def cached(ttl: int = 300, key_prefix: str = "") -> Callable[[F], F]:
     """Cache function results using function name, args, and kwargs as key."""
+
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
