@@ -1,5 +1,3 @@
-"""Dependency injection utilities for Flask routes."""
-
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -10,18 +8,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def inject(*dependency_classes: type) -> Callable[[F], F]:
-    """
-    Decorator that injects dependencies into route handlers.
-    
-    Supports both service classes (instantiated with no args) and special
-    dependency classes like AuthUser (instantiated with from_request()).
-    
-    Example:
-        @inject(AuthUser, SongsService)
-        def my_route(auth: AuthUser, songs_service: SongsService):
-            return {"user": auth.username}
-    """
-
+    """Inject dependencies into route handler. Instantiates classes or calls from_request() if available."""
     def decorator(f: F) -> F:
         @wraps(f)
         def wrapper(*args: Any, **kwargs: Any) -> Any:

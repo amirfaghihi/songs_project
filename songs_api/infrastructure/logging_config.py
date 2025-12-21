@@ -1,5 +1,3 @@
-"""Logging configuration using loguru."""
-
 from __future__ import annotations
 
 import sys
@@ -14,7 +12,7 @@ if TYPE_CHECKING:
 
 
 def serialize_record(record: dict) -> dict:
-    """Serialize log record for JSON output."""
+    """Extract relevant fields from loguru record for JSON serialization."""
     subset = {
         "timestamp": record["time"].isoformat(),
         "level": record["level"].name,

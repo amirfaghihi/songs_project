@@ -1,5 +1,3 @@
-"""Songs-related routes."""
-
 from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
@@ -18,8 +16,6 @@ from songs_api.utils.validation import validate_query, validate_request
 
 
 def register_songs_routes(bp: Blueprint) -> None:
-    """Register songs-related routes."""
-
     @bp.route("/songs", methods=["GET"])
     @validate_query(PaginationQueryParams)
     @cached_response("songs:list", ttl=300)
@@ -83,7 +79,7 @@ def register_songs_routes(bp: Blueprint) -> None:
             try:
                 level = int(level_str)
             except ValueError as exc:
-                raise BadRequestError(message="Invalid integer for 'level'") from exc
+                raise BadRequestError(message="Invalid level") from exc
 
         response = songs_service.get_average_difficulty(level=level)
         return jsonify(response.model_dump())

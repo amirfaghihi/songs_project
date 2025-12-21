@@ -13,7 +13,7 @@ from songs_api.constants import JWTClaim
 
 
 def create_access_token(username: str) -> str:
-    """Create a JWT access token for a user."""
+    """Create JWT access token with expiration."""
     secret_key = str(current_app.config.get("JWT_SECRET_KEY", ""))
     algorithm = str(current_app.config.get("JWT_ALGORITHM", "HS256"))
     expire_minutes = int(current_app.config.get("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", 60))
@@ -29,7 +29,7 @@ def create_access_token(username: str) -> str:
 
 
 def verify_access_token(token: str) -> str:
-    """Verify a JWT access token and return the username."""
+    """Verify JWT token and return username. Raises UnauthorizedError if invalid."""
     secret_key = str(current_app.config.get("JWT_SECRET_KEY", ""))
     algorithm = str(current_app.config.get("JWT_ALGORITHM", "HS256"))
 
@@ -46,24 +46,21 @@ def verify_access_token(token: str) -> str:
 
 
 def requires_jwt_auth[F: Callable[..., Any]](fn: F) -> F:
-    """Require JWT authentication for a route."""
-
+    """Decorator to require valid JWT token in Authorization header."""
     @wraps(fn)
     def wrapper(*args: Any, **kwargs: Any):
         auth_header = request.headers.get("Authorization", "").strip()
 
         if not auth_header:
-            raise UnauthorizedError(
-                message="Missing authorization header. Expected format: 'Authorization: Bearer <token>'"
-            )
+            raise UnauthorizedError(message="Missing authorization header")
 
         parts = auth_header.split(" ", 1)
         if len(parts) != 2 or parts[0].lower() != "bearer":
-            raise UnauthorizedError(message="Invalid authorization header format. Expected: 'Bearer <token>'")
+            raise UnauthorizedError(message="Invalid authorization header")
 
         token = parts[1].strip()
         if not token:
-            raise UnauthorizedError(message="Missing token in authorization header")
+            raise UnauthorizedError(message="Missing token")
 
         username = verify_access_token(token)
         request.jwt_username = username

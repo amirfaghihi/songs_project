@@ -1,5 +1,3 @@
-"""Rate limiting configuration and utilities."""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -16,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def get_user_identifier() -> str:
-    """Get identifier for rate limiting."""
+    """Return user-based identifier if authenticated, otherwise IP address."""
     if hasattr(request, "jwt_username") and request.jwt_username:
         return f"user:{request.jwt_username}"
 
@@ -24,7 +22,7 @@ def get_user_identifier() -> str:
 
 
 def create_limiter(app: Flask, settings: Settings) -> Limiter:
-    """Create and configure rate limiter."""
+    """Configure Flask-Limiter with Redis or in-memory storage based on settings."""
     if not settings.rate_limit_enabled:
         logger.info("Rate limiting is disabled")
         limiter = Limiter(

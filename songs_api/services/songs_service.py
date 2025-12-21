@@ -6,10 +6,7 @@ from songs_api.schemas import AverageDifficultyResponse, SearchSongsResponse, So
 
 
 class SongsService:
-    """Service layer for songs-related business logic."""
-
     def list_songs(self, page: int, page_size: int) -> SongsListResponse:
-        """Get paginated list of songs."""
         skip = (page - 1) * page_size
 
         with UnitOfWork() as uow:
@@ -29,7 +26,6 @@ class SongsService:
         )
 
     def search_songs(self, message: str, page: int, page_size: int) -> SearchSongsResponse:
-        """Search songs by artist or title."""
         skip = (page - 1) * page_size
 
         with UnitOfWork() as uow:
@@ -50,7 +46,6 @@ class SongsService:
         )
 
     def get_average_difficulty(self, level: int | None = None) -> AverageDifficultyResponse:
-        """Calculate average difficulty of songs, optionally filtered by level."""
         with UnitOfWork() as uow:
             avg = uow.songs_repository.get_average_difficulty(level=level)
 
@@ -58,7 +53,6 @@ class SongsService:
 
     @staticmethod
     def _song_to_response(song: Song) -> SongResponse:
-        """Convert Song document to SongResponse schema."""
         return SongResponse(
             id=str(song.id),
             artist=song.artist,

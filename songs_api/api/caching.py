@@ -1,5 +1,3 @@
-"""Route-level caching decorator for API responses."""
-
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -12,25 +10,7 @@ from songs_api.infrastructure import cache_key, get_cache
 
 
 def cached_response(prefix: str, ttl: int = 300):
-    """
-    Decorator to cache route responses.
-
-    Caches the JSON response after model serialization.
-    Automatically generates cache keys from request args.
-
-    Args:
-        prefix: Cache key prefix (e.g., "songs:list")
-        ttl: Time to live in seconds (default: 300 = 5 minutes)
-
-    Example:
-        @bp.route("/songs")
-        @requires_jwt_auth
-        @cached_response("songs:list", ttl=300)
-        def list_songs():
-            response = service.list_songs(...)
-            return jsonify(response.model_dump())
-    """
-
+    """Cache route responses using request args and kwargs as cache key."""
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:

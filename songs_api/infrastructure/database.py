@@ -5,7 +5,7 @@ from mongoengine.connection import get_connection
 
 
 def init_db(mongo_uri: str, db_name: str) -> None:
-    """Initialize MongoEngine connection with optimized settings."""
+    """Initialize MongoDB connection with connection pooling and retry settings."""
     try:
         get_connection(alias="default")
     except Exception:
@@ -26,12 +26,11 @@ def init_db(mongo_uri: str, db_name: str) -> None:
 
 
 def close_db() -> None:
-    """Close MongoEngine connection."""
     disconnect(alias="default")
 
 
 def ensure_indexes() -> None:
-    """Ensure all document indexes are created."""
+    """Create database indexes for all document models."""
     from songs_api.models.documents import Rating, RatingStats, Song, User
 
     Song.ensure_indexes()

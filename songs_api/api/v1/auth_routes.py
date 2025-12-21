@@ -1,5 +1,3 @@
-"""Authentication routes."""
-
 from __future__ import annotations
 
 from flask import Blueprint, jsonify
@@ -12,8 +10,6 @@ from songs_api.utils.validation import validate_request
 
 
 def register_auth_routes(bp: Blueprint) -> None:
-    """Register authentication routes."""
-
     @bp.route("/auth/login", methods=["POST"])
     @validate_request(LoginRequest)
     @inject(AuthService)

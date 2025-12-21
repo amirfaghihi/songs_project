@@ -1,5 +1,3 @@
-"""Ratings repository for data access."""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -12,13 +10,10 @@ if TYPE_CHECKING:
 
 
 class RatingsRepository(BaseRepository):
-    """Repository for Rating and RatingStats entity operations."""
-
     def __init__(self, cache_service: Cache | None = None):
         super().__init__(cache_service)
 
     def add_rating(self, song_id: str, rating: int) -> RatingStats:
-        """Add a rating and update statistics atomically."""
         Rating(song_id=song_id, rating=rating).save()
 
         RatingStats.objects(song_id=song_id).update_one(
@@ -34,5 +29,4 @@ class RatingsRepository(BaseRepository):
         return stats
 
     def get_rating_stats(self, song_id: str) -> RatingStats | None:
-        """Get rating statistics for a song."""
         return RatingStats.objects(song_id=song_id).first()

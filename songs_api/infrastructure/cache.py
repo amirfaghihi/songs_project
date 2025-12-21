@@ -1,5 +1,3 @@
-"""Redis caching layer for improved performance and scalability."""
-
 from __future__ import annotations
 
 import hashlib
@@ -19,10 +17,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 class Cache:
-    """Redis cache wrapper with fallback to no-op for non-production environments."""
-
     def __init__(self, settings: Settings) -> None:
-        """Initialize cache with settings."""
         self.settings = settings
         self.enabled = settings.is_production and settings.cache_enabled
         self.redis_client = None
@@ -45,7 +40,6 @@ class Cache:
                 self.redis_client = None
 
     def get(self, key: str) -> Any | None:
-        """Get value from cache."""
         if not self.enabled or not self.redis_client:
             return None
 
@@ -59,18 +53,15 @@ class Cache:
         return None
 
     def set(self, key: str, value: Any, ttl: int = 300) -> bool:
-        """Set value in cache with TTL."""
+        """Serialize value to JSON and cache with TTL. Handles Pydantic models, dates, and ObjectIds."""
         if not self.enabled or not self.redis_client:
             return False
 
         try:
-            # Handle Pydantic models - convert to dict first
             if hasattr(value, "model_dump"):
                 value = value.model_dump()
             elif hasattr(value, "dict") and not isinstance(value, dict):
                 value = value.dict()
-
-            # Custom JSON encoder for dates and ObjectIds
             def json_encoder(obj):
                 if isinstance(obj, (date, datetime)):
                     return obj.isoformat()
@@ -86,7 +77,6 @@ class Cache:
             return False
 
     def delete(self, key: str) -> bool:
-        """Delete value from cache."""
         if not self.enabled or not self.redis_client:
             return False
 
@@ -98,7 +88,7 @@ class Cache:
             return False
 
     def invalidate_pattern(self, pattern: str) -> int:
-        """Invalidate all keys matching pattern."""
+        """Delete all cache keys matching pattern (e.g., 'songs:*')."""
         if not self.enabled or not self.redis_client:
             return 0
 
@@ -112,24 +102,21 @@ class Cache:
             return 0
 
 
-# Global cache instance (initialized in app factory)
 _cache_instance: Cache | None = None
 
 
 def init_cache(settings: Settings) -> Cache:
-    """Initialize global cache instance."""
     global _cache_instance
     _cache_instance = Cache(settings)
     return _cache_instance
 
 
 def get_cache() -> Cache | None:
-    """Get global cache instance."""
     return _cache_instance
 
 
 def cache_key(*args: Any, prefix: str = "") -> str:
-    """Generate a cache key from arguments."""
+    """Generate cache key from args. Hashes keys longer than 100 chars."""
     key_parts = [str(arg) for arg in args]
     key_string = ":".join(key_parts)
 
@@ -143,8 +130,7 @@ def cache_key(*args: Any, prefix: str = "") -> str:
 
 
 def cached(ttl: int = 300, key_prefix: str = "") -> Callable[[F], F]:
-    """Decorator to cache function results."""
-
+    """Cache function results using function name, args, and kwargs as key."""
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:

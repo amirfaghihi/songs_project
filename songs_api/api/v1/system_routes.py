@@ -1,13 +1,9 @@
-"""System-related routes (health checks, status, etc.)."""
-
 from __future__ import annotations
 
 from flask import Blueprint, jsonify
 
 
 def register_system_routes(bp: Blueprint) -> None:
-    """Register system-related routes."""
-
     @bp.route("/health", methods=["GET"])
     def health():
         """

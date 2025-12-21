@@ -6,10 +6,7 @@ from songs_api.schemas import RatingStatsResponse
 
 
 class RatingsService:
-    """Service layer for ratings-related business logic."""
-
     def add_rating(self, song_id: str, rating: int) -> RatingStatsResponse:
-        """Add a rating for a song and return updated statistics."""
         with UnitOfWork() as uow:
             song = uow.songs_repository.get_by_id(song_id)
             if not song:
@@ -32,7 +29,6 @@ class RatingsService:
         )
 
     def get_rating_stats(self, song_id: str) -> RatingStatsResponse:
-        """Get rating statistics for a song."""
         with UnitOfWork() as uow:
             song = uow.songs_repository.get_by_id(song_id)
             if not song:
