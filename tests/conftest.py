@@ -37,14 +37,13 @@ def app(test_db):
         jwt_algorithm="HS256",
         jwt_access_token_expire_minutes=60,
         environment=Environment.LOCAL,
-        log_level="ERROR",  # Suppress logs during tests
-        rate_limit_enabled=False,  # Disable rate limiting for tests
+        log_level="ERROR",
+        rate_limit_enabled=False,
     )
 
     app = create_app(settings=settings)
     app.config["TESTING"] = True
 
-    # Seed test user for authentication tests
     with app.app_context():
         with UnitOfWork() as uow:
             existing_user = uow.users_repository.get_by_username("testuser")
