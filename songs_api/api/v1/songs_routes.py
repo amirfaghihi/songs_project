@@ -5,13 +5,13 @@ from __future__ import annotations
 from flask import Blueprint, jsonify, request
 
 from songs_api.api.caching import cached_response
+from songs_api.api.dependencies import AuthUser
 from songs_api.api.errors import BadRequestError
 from songs_api.schemas import (
     AddRatingRequest,
     PaginationQueryParams,
     SearchQueryParams,
 )
-from songs_api.security.jwt_auth import requires_jwt_auth
 from songs_api.services import RatingsService, SongsService
 from songs_api.utils.dependencies import inject
 from songs_api.utils.validation import validate_query, validate_request
@@ -21,11 +21,10 @@ def register_songs_routes(bp: Blueprint) -> None:
     """Register songs-related routes."""
 
     @bp.route("/songs", methods=["GET"])
-    @requires_jwt_auth
     @validate_query(PaginationQueryParams)
     @cached_response("songs:list", ttl=300)
-    @inject(SongsService)
-    def list_songs(query: PaginationQueryParams, songs_service: SongsService):
+    @inject(AuthUser, SongsService)
+    def list_songs(query: PaginationQueryParams, auth: AuthUser, songs_service: SongsService):
         """
         List songs with pagination
         ---
@@ -56,10 +55,9 @@ def register_songs_routes(bp: Blueprint) -> None:
         return jsonify(response.model_dump())
 
     @bp.route("/songs/difficulty/average", methods=["GET"])
-    @requires_jwt_auth
     @cached_response("songs:avg_difficulty", ttl=600)
-    @inject(SongsService)
-    def average_difficulty(songs_service: SongsService):
+    @inject(AuthUser, SongsService)
+    def average_difficulty(auth: AuthUser, songs_service: SongsService):
         """
         Get average difficulty of songs, optionally filtered by level
         ---
@@ -91,11 +89,10 @@ def register_songs_routes(bp: Blueprint) -> None:
         return jsonify(response.model_dump())
 
     @bp.route("/songs/search", methods=["GET"])
-    @requires_jwt_auth
     @validate_query(SearchQueryParams)
     @cached_response("songs:search", ttl=600)
-    @inject(SongsService)
-    def search_songs(query: SearchQueryParams, songs_service: SongsService):
+    @inject(AuthUser, SongsService)
+    def search_songs(query: SearchQueryParams, auth: AuthUser, songs_service: SongsService):
         """
         Search songs by artist or title
         ---
@@ -135,10 +132,9 @@ def register_songs_routes(bp: Blueprint) -> None:
         return jsonify(response.model_dump())
 
     @bp.route("/songs/ratings", methods=["POST"])
-    @requires_jwt_auth
     @validate_request(AddRatingRequest)
-    @inject(RatingsService)
-    def add_rating(data: AddRatingRequest, ratings_service: RatingsService):
+    @inject(AuthUser, RatingsService)
+    def add_rating(data: AddRatingRequest, auth: AuthUser, ratings_service: RatingsService):
         """
         Add a rating for a song
         ---
@@ -176,10 +172,9 @@ def register_songs_routes(bp: Blueprint) -> None:
         return jsonify(response.model_dump()), 201
 
     @bp.route("/songs/<song_id>/ratings", methods=["GET"])
-    @requires_jwt_auth
     @cached_response("ratings:stats", ttl=300)
-    @inject(RatingsService)
-    def get_rating_stats(ratings_service: RatingsService, song_id: str):
+    @inject(AuthUser, RatingsService)
+    def get_rating_stats(auth: AuthUser, ratings_service: RatingsService, song_id: str):
         """
         Get rating statistics for a song
         ---
