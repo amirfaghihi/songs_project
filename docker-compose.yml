@@ -72,6 +72,8 @@ services:
       - RATE_LIMIT_STORAGE_URI=${RATE_LIMIT_STORAGE_URI:-redis://redis:6379/1}
       # Environment
       - ENVIRONMENT=${ENVIRONMENT:-local}
+      # Gunicorn Configuration
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-4}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -85,7 +87,7 @@ services:
       sh -c "
         flask init-db &&
         flask seed-songs &&
-        flask run --host=0.0.0.0
+        gunicorn wsgi:app --bind 0.0.0.0:5000 --workers $${GUNICORN_WORKERS:-4} --timeout 120
       "
 
 volumes:

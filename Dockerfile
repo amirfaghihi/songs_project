@@ -20,10 +20,11 @@ COPY wsgi.py ./
 COPY songs.json ./
 
 ENV PYTHONUNBUFFERED=1
+ENV GUNICORN_WORKERS=${GUNICORN_WORKERS:-4}
 
 EXPOSE 5000
 
-CMD ["gunicorn", "wsgi:app", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120"]
+CMD ["sh", "-c", "gunicorn wsgi:app --bind 0.0.0.0:5000 --workers ${GUNICORN_WORKERS:-4} --timeout 120"]
 
 
 

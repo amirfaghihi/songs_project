@@ -66,6 +66,8 @@ class Settings(BaseSettings):
     cache_redis_url: str = "redis://localhost:6379/0"
     cache_default_ttl: int = 300
 
+    gunicorn_workers: int = Field(default=4, description="Number of gunicorn worker processes")
+
     @model_validator(mode="after")
     def configure_rate_limit_storage(self) -> Settings:
         """Configure rate limit storage based on environment."""

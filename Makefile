@@ -6,8 +6,14 @@ UV := uv
 APP_MODULE := wsgi:app
 HOST := 0.0.0.0
 PORT := 8000
-WORKERS := 4
+WORKERS := $(or $(word 2, $(MAKECMDGOALS)), 4)
 TIMEOUT := 120
+
+# Prevent Make from trying to build the workers number as a target
+ifneq ($(filter-out run run-dev,$(MAKECMDGOALS)),)
+  $(filter-out run run-dev,$(MAKECMDGOALS)):
+	@:
+endif
 
 help: ## Show this help message
 	@echo "Available targets:"
@@ -19,7 +25,7 @@ install: ## Install all dependencies (including dev) using uv
 install-prod: ## Install production dependencies only
 	$(UV) sync
 
-run: ## Run the application with gunicorn
+run: ## Run the application with gunicorn (usage: make run [N] where N is number of workers, default: 4)
 	$(UV) run gunicorn $(APP_MODULE) \
 		--bind $(HOST):$(PORT) \
 		--workers $(WORKERS) \
@@ -28,10 +34,10 @@ run: ## Run the application with gunicorn
 		--error-logfile - \
 		--log-level info
 
-run-dev: ## Run the application with gunicorn in development mode (reload on changes)
+run-dev: ## Run the application with gunicorn in development mode (reload on changes, usage: make run-dev [N])
 	$(UV) run gunicorn $(APP_MODULE) \
 		--bind $(HOST):$(PORT) \
-		--workers 2 \
+		--workers $(WORKERS) \
 		--timeout $(TIMEOUT) \
 		--reload \
 		--access-logfile - \

@@ -66,7 +66,8 @@ make seed  # Seeds songs + test user (testuser/testpass)
 
 # Run
 make run-dev  # Development with auto-reload
-make run      # Production-like with gunicorn
+make run      # Production-like with gunicorn (default: 4 workers)
+make run 8    # Run with 8 workers
 ```
 
 ## Configuration
@@ -83,6 +84,7 @@ When using Docker Compose, you can set these variables in a `.env` file or expor
 | `MONGO_ROOT_PASSWORD` | `adminpassword` | MongoDB root password |
 | `MONGO_DB_NAME` | `songs_db` | MongoDB database name |
 | `JWT_SECRET_KEY` | `change-this-secret-key-in-production` | JWT secret key |
+| `GUNICORN_WORKERS` | `4` | Number of gunicorn worker processes |
 
 #### Replica Set Configuration (Optional)
 
@@ -125,6 +127,7 @@ MONGO_URI=mongodb://root:securepassword@mongodb:27017/songs_db?authSource=admin&
 | `CACHE_ENABLED` | `true` | Enable Redis caching |
 | `CACHE_REDIS_URL` | `redis://localhost:6379/0` | Redis URL for caching |
 | `CACHE_DEFAULT_TTL` | `300` | Default cache TTL in seconds |
+| `GUNICORN_WORKERS` | `4` | Number of gunicorn worker processes |
 
 **Notes:** 
 - When using Bitnami MongoDB, the root username is `root`, not `admin`.
@@ -226,8 +229,10 @@ curl -X GET http://localhost:8000/api/v1/songs \
 ```bash
 make install       # Install dependencies
 make install-prod  # Production dependencies only
-make run           # Run with gunicorn
-make run-dev       # Run with auto-reload
+make run           # Run with gunicorn (default: 4 workers)
+make run 8         # Run with 8 workers (or any number)
+make run-dev       # Run with auto-reload (default: 4 workers)
+make run-dev 2     # Run dev mode with 2 workers
 make test          # Run tests
 make test-cov      # Tests with coverage
 make lint          # Check code
@@ -286,11 +291,35 @@ export JWT_SECRET_KEY=<secret>
 export MONGO_URI=<mongo-uri>
 export LOG_FORMAT=json
 export RATE_LIMIT_STORAGE_URI=redis://redis:6379
+export GUNICORN_WORKERS=8  # Optional: configure number of workers
 
 # Install and run
 make install-prod
-make run
+make run  # Uses default 4 workers, or specify: make run 8
 ```
+
+### Configuring Gunicorn Workers
+
+The number of gunicorn workers can be configured in several ways:
+
+**Via Makefile (Local Development):**
+```bash
+make run 8        # Run with 8 workers
+make run-dev 2    # Dev mode with 2 workers
+```
+
+**Via Docker Compose:**
+```bash
+# Set in .env file or environment
+GUNICORN_WORKERS=8 docker-compose up -d
+```
+
+**Via Docker:**
+```bash
+docker run -e GUNICORN_WORKERS=8 ...
+```
+
+**Recommended:** Set workers to `(2 × CPU cores) + 1` for optimal performance.
 
 ## Requirements
 
@@ -309,7 +338,7 @@ make run
   - Database 0: Application caching
   - Database 1: Rate limiting
   - Persistent storage with AOF (Append-Only File)
-- **Web Framework:** Flask with Gunicorn WSGI server (4 workers)
+- **Web Framework:** Flask with Gunicorn WSGI server (configurable workers, default: 4)
 - **ODM:** MongoEngine for MongoDB object-document mapping
 - **Authentication:** JWT tokens with PyJWT
 - **Validation:** Pydantic for request/response schemas
