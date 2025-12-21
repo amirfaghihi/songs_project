@@ -43,7 +43,6 @@ def test_uow_provides_songs_repository(test_db, sample_songs):
 
         assert len(songs) == 3
         assert total == 3
-        # Verify it's using the repository
         assert isinstance(uow.songs_repository, SongsRepository)
 
 
@@ -57,7 +56,6 @@ def test_uow_provides_ratings_repository(test_db, sample_songs):
         assert stats is not None
         assert stats.count == 1
         assert stats.sum == 5
-        # Verify it's using the repository
         assert isinstance(uow.ratings_repository, RatingsRepository)
 
 
@@ -68,7 +66,6 @@ def test_uow_provides_users_repository(test_db):
 
         assert user is not None
         assert user.username == "testuser123"
-        # Verify it's using the repository
         assert isinstance(uow.users_repository, UsersRepository)
 
 
@@ -133,10 +130,8 @@ def test_ratings_repository_get_stats(test_db, sample_songs):
     repo = RatingsRepository()
     song_id = str(sample_songs[0].id)
 
-    # Add a rating first
     repo.add_rating(song_id=song_id, rating=3)
 
-    # Get stats
     stats = repo.get_rating_stats(song_id=song_id)
 
     assert stats is not None
@@ -148,12 +143,10 @@ def test_users_repository_create_and_get(test_db):
     """Test UsersRepository create and get methods directly."""
     repo = UsersRepository()
 
-    # Create user
     user = repo.create_user(username="newuser", password="password123")
     assert user is not None
     assert user.username == "newuser"
 
-    # Get user
     found_user = repo.get_by_username("newuser")
     assert found_user is not None
     assert found_user.username == "newuser"

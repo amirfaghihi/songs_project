@@ -14,7 +14,6 @@ def test_concurrent_rating_updates(test_db, sample_songs):
     num_ratings = 50
     rating_value = 3
 
-    # Submit multiple ratings concurrently
     def add_rating():
         with UnitOfWork() as uow:
             return uow.ratings_repository.add_rating(song_id=song_id, rating=rating_value)
@@ -23,10 +22,8 @@ def test_concurrent_rating_updates(test_db, sample_songs):
         futures = [executor.submit(add_rating) for _ in range(num_ratings)]
         results = [future.result() for future in concurrent.futures.as_completed(futures)]
 
-    # Verify all ratings were recorded correctly
     assert all(result is not None for result in results)
 
-    # Verify final stats are correct
     with UnitOfWork() as uow:
         final_stats = uow.ratings_repository.get_rating_stats(song_id=song_id)
 
@@ -41,7 +38,7 @@ def test_concurrent_rating_updates(test_db, sample_songs):
 def test_concurrent_mixed_ratings(test_db, sample_songs):
     """Test concurrent rating submissions with different values."""
     song_id = str(sample_songs[0].id)
-    ratings = [1, 2, 3, 4, 5] * 10  # 50 ratings total
+    ratings = [1, 2, 3, 4, 5] * 10
 
     def add_rating(rating: int):
         with UnitOfWork() as uow:
@@ -53,7 +50,6 @@ def test_concurrent_mixed_ratings(test_db, sample_songs):
 
     assert all(result is not None for result in results)
 
-    # Verify final stats
     with UnitOfWork() as uow:
         final_stats = uow.ratings_repository.get_rating_stats(song_id=song_id)
 
@@ -75,7 +71,6 @@ def test_concurrent_ratings_multiple_songs(test_db, sample_songs):
         with UnitOfWork() as uow:
             return uow.ratings_repository.add_rating(song_id=song_id, rating=rating_value)
 
-    # Create a flat list of tasks (song, rating) pairs
     tasks = []
     for song in sample_songs:
         tasks.extend([(song, rating_value) for _ in range(num_ratings_per_song)])
@@ -86,7 +81,6 @@ def test_concurrent_ratings_multiple_songs(test_db, sample_songs):
 
     assert all(result is not None for result in results)
 
-    # Verify each song has correct stats
     for song in sample_songs:
         song_id = str(song.id)
         with UnitOfWork() as uow:
@@ -107,18 +101,15 @@ def test_rating_stats_never_created_twice(test_db, sample_songs):
         with UnitOfWork() as uow:
             return uow.ratings_repository.add_rating(song_id=song_id, rating=5)
 
-    # Attempt to create stats concurrently
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         futures = [executor.submit(add_first_rating) for _ in range(num_concurrent_requests)]
         results = [future.result() for future in concurrent.futures.as_completed(futures)]
 
     assert all(result is not None for result in results)
 
-    # Verify only one RatingStats document exists for this song
     stats_count = RatingStats.objects(song_id=song_id).count()
     assert stats_count == 1
 
-    # Verify the count is correct
     with UnitOfWork() as uow:
         stats = uow.ratings_repository.get_rating_stats(song_id=song_id)
 

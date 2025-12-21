@@ -74,7 +74,6 @@ def test_average_difficulty_nonexistent_level(client, auth_headers, sample_songs
     response = client.get("/api/v1/songs/difficulty/average?level=999", headers=auth_headers)
     assert response.status_code == 200
     data = response.get_json()
-    # MongoDB returns 0.0 for average when no documents match
     assert data["average_difficulty"] in [None, 0.0]
     assert data["level"] == 999
 
@@ -92,7 +91,6 @@ def test_add_rating_invalid_song_id_format(client, auth_headers):
         headers=auth_headers,
         json={"song_id": "invalid-id", "rating": 5},
     )
-    # Should return 404 as song won't be found
     assert response.status_code == 404
 
 
@@ -100,7 +98,6 @@ def test_add_rating_boundary_values(client, auth_headers, sample_songs):
     """Test adding ratings with boundary values (1 and 5)."""
     song_id = str(sample_songs[0].id)
 
-    # Test minimum rating
     response = client.post(
         "/api/v1/songs/ratings",
         headers=auth_headers,
@@ -108,7 +105,6 @@ def test_add_rating_boundary_values(client, auth_headers, sample_songs):
     )
     assert response.status_code == 201
 
-    # Test maximum rating
     response = client.post(
         "/api/v1/songs/ratings",
         headers=auth_headers,
@@ -168,13 +164,11 @@ def test_get_rating_stats_invalid_song_id(client, auth_headers):
 
 def test_search_pagination_edge_cases(client, auth_headers, sample_songs):
     """Test search with pagination edge cases."""
-    # Test first page
     response = client.get("/api/v1/songs/search?message=Yousicians&page=1&page_size=1", headers=auth_headers)
     assert response.status_code == 200
     data = response.get_json()
     assert len(data["data"]) <= 1
 
-    # Test page beyond results
     response = client.get("/api/v1/songs/search?message=Yousicians&page=999&page_size=20", headers=auth_headers)
     assert response.status_code == 200
     data = response.get_json()
@@ -187,7 +181,6 @@ def test_login_empty_username(client):
         "/api/v1/auth/login",
         json={"username": "", "password": "testpass"},
     )
-    # Empty username is treated as invalid credentials (401)
     assert response.status_code in [400, 401, 422]
 
 
@@ -202,14 +195,12 @@ def test_login_empty_password(client):
 
 def test_register_duplicate_username(client, app):
     """Test registering with existing username."""
-    # First registration
     response1 = client.post(
         "/api/v1/auth/register",
         json={"username": "newuser123", "password": "password123"},
     )
     assert response1.status_code == 201
 
-    # Duplicate registration
     response2 = client.post(
         "/api/v1/auth/register",
         json={"username": "newuser123", "password": "password456"},
