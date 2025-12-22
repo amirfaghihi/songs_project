@@ -2,6 +2,8 @@
 
 Production-ready REST API built with Flask, MongoDB, and modern Python patterns.
 
+📐 **[View Architecture](#architecture)** | 📚 **[Detailed Docs](docs/architecture.md)**
+
 ## Quick Start
 
 ### Docker Compose (Recommended)
@@ -270,15 +272,67 @@ docker-compose run --rm api pytest
 
 ## Architecture
 
-```
-Routes → Services → UoW → MongoEngine
+```mermaid
+graph TB
+    subgraph Client["🌐 Client"]
+        WebApp["Web/Mobile/CLI"]
+    end
+
+    subgraph API["📡 API Layer"]
+        Routes["Routes<br/>/api/v1/*"]
+        Auth["JWT + Rate Limiting"]
+        Validation["Pydantic Schemas"]
+    end
+
+    subgraph Services["💼 Service Layer"]
+        AuthSvc["AuthService"]
+        SongsSvc["SongsService"]
+        RatingsSvc["RatingsService"]
+    end
+
+    subgraph DataAccess["🗄️ Data Access"]
+        UoW["UnitOfWork"]
+        SongsRepo["SongsRepository"]
+        RatingsRepo["RatingsRepository"]
+        UsersRepo["UsersRepository"]
+    end
+
+    subgraph Infrastructure["⚙️ Infrastructure"]
+        MongoDB[("MongoDB")]
+        Redis[("Redis")]
+    end
+
+    WebApp --> Routes
+    Routes --> Auth
+    Auth --> Validation
+    Validation --> AuthSvc
+    Validation --> SongsSvc
+    Validation --> RatingsSvc
+
+    AuthSvc --> UoW
+    SongsSvc --> UoW
+    RatingsSvc --> UoW
+
+    UoW --> SongsRepo
+    UoW --> RatingsRepo
+    UoW --> UsersRepo
+
+    SongsRepo --> MongoDB
+    RatingsRepo --> MongoDB
+    UsersRepo --> MongoDB
+
+    SongsRepo -.cache.-> Redis
+    RatingsRepo -.cache.-> Redis
+    Auth -.rate limit.-> Redis
 ```
 
-- **Routes** (`api/v1/routes.py`): HTTP handling, validation
-- **Services** (`services/`): Business logic
-- **Unit of Work** (`uow.py`): Repository pattern
-- **Models** (`models/documents.py`): ODM documents
-- **Settings** (`settings.py`): Environment configuration
+**Layered Architecture:**
+- **API Layer**: Routes, JWT authentication, request validation
+- **Service Layer**: Business logic and orchestration  
+- **Data Access**: Unit of Work pattern + Repository pattern
+- **Infrastructure**: MongoDB (database) + Redis (cache & rate limiting)
+
+For detailed architecture diagrams and patterns, see [`docs/architecture.md`](docs/architecture.md)
 
 ## Deployment
 
