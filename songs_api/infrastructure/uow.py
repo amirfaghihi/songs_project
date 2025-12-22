@@ -49,6 +49,24 @@ class UnitOfWork:
         except Exception:
             return False
 
+    @staticmethod
+    def _safe_abort_transaction(session) -> None:
+        if session is None:
+            return
+        try:
+            session.abort_transaction()
+        except Exception:
+            pass
+
+    @staticmethod
+    def _safe_end_session(session) -> None:
+        if session is None:
+            return
+        try:
+            session.end_session()
+        except Exception:
+            pass
+
     def _try_begin_transaction(self) -> None:
         client = get_connection(alias="default")
         if not self._server_supports_transactions(client):
@@ -66,21 +84,10 @@ class UnitOfWork:
             self._mongo_session = session
             self._tx_active = True
         except OperationFailure:
-            if session is not None:
-                try:
-                    session.abort_transaction()
-                except Exception:
-                    pass
-                try:
-                    session.end_session()
-                except Exception:
-                    pass
+            self._safe_abort_transaction(session)
+            self._safe_end_session(session)
         except Exception:
-            if session is not None:
-                try:
-                    session.end_session()
-                except Exception:
-                    pass
+            self._safe_end_session(session)
 
     def __enter__(self) -> UnitOfWork:
         self._is_active = True
