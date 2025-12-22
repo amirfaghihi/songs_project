@@ -63,7 +63,7 @@ def test_search_performance_large_dataset(large_song_dataset):
     start_time = time.time()
 
     with UnitOfWork() as uow:
-        songs, total = uow.songs_repository.search_songs(query="Artist 42", skip=0, limit=20)
+        songs, _ = uow.songs_repository.search_songs(query="Artist 42", skip=0, limit=20)
 
     elapsed = time.time() - start_time
 
@@ -148,7 +148,7 @@ def test_search_with_pagination_performance(large_song_dataset):
     start_time = time.time()
 
     with UnitOfWork() as uow:
-        songs, total = uow.songs_repository.search_songs(query="Song", skip=100, limit=50)
+        songs, _ = uow.songs_repository.search_songs(query="Song", skip=100, limit=50)
 
     elapsed = time.time() - start_time
 

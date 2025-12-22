@@ -96,7 +96,7 @@ def test_songs_repository_list_songs(test_db, sample_songs):
 def test_songs_repository_search(test_db, sample_songs):
     """Test SongsRepository.search_songs method directly."""
     repo = SongsRepository()
-    songs, total = repo.search_songs(query="Fastfinger", skip=0, limit=10)
+    songs, _ = repo.search_songs(query="Fastfinger", skip=0, limit=10)
 
     assert len(songs) >= 1
     assert any("Fastfinger" in song.artist for song in songs)

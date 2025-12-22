@@ -1,3 +1,6 @@
+import pytest
+
+
 def test_add_rating(client, auth_headers, sample_songs):
     """Test adding a rating to a song."""
     song_id = str(sample_songs[0].id)
@@ -9,7 +12,7 @@ def test_add_rating(client, auth_headers, sample_songs):
     assert response.status_code == 201
     data = response.get_json()
     assert data["song_id"] == song_id
-    assert data["average"] == 5.0
+    assert data["average"] == pytest.approx(5.0)
     assert data["lowest"] == 5
     assert data["highest"] == 5
     assert data["count"] == 1
@@ -54,7 +57,7 @@ def test_get_rating_stats(client, auth_headers, sample_songs):
     assert response.status_code == 200
     data = response.get_json()
     assert data["song_id"] == song_id
-    assert data["average"] == 4.0
+    assert data["average"] == pytest.approx(4.0)
     assert data["lowest"] == 3
     assert data["highest"] == 5
     assert data["count"] == 2
