@@ -193,17 +193,17 @@ def test_login_empty_password(client):
     assert response.status_code in [400, 401]
 
 
-def test_register_duplicate_username(client, app):
+def test_register_duplicate_username(client, app, password_factory):
     """Test registering with existing username."""
     response1 = client.post(
         "/api/v1/auth/register",
-        json={"username": "newuser123", "password": "password123"},
+        json={"username": "newuser123", "password": password_factory()},
     )
     assert response1.status_code == 201
 
     response2 = client.post(
         "/api/v1/auth/register",
-        json={"username": "newuser123", "password": "password456"},
+        json={"username": "newuser123", "password": password_factory()},
     )
     assert response2.status_code == 409
 

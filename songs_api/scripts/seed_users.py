@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import secrets
+
 from loguru import logger
 
 from songs_api.infrastructure import UnitOfWork, ensure_indexes, init_db
@@ -12,8 +15,17 @@ def seed_users() -> None:
     """Seed default test user into MongoDB if it doesn't exist."""
     ensure_indexes()
 
-    test_username = "testuser"
-    test_password = "testpass"
+    test_username = os.getenv("SONGS_SEED_TEST_USERNAME", "testuser")
+    test_password = os.getenv("SONGS_SEED_TEST_PASSWORD")
+
+    if not test_password:
+        test_password = secrets.token_urlsafe(18)
+        logger.warning(
+            "No SONGS_SEED_TEST_PASSWORD set; generated a random password for the seeded user."
+        )
+        logger.warning(
+            f"Seeded credentials -> username='{test_username}' password='{test_password}'"
+        )
 
     with UnitOfWork() as uow:
         existing_user = uow.users_repository.get_by_username(test_username)

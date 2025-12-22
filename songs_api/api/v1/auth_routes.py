@@ -77,7 +77,7 @@ def register_auth_routes(bp: Blueprint) -> None:
                 password:
                   type: string
                   minLength: 6
-                  example: password123
+                  example: your-password
         responses:
           201:
             description: User registered successfully

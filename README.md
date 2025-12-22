@@ -57,11 +57,11 @@ docker run -d --name songs_redis -p 6379:6379 redis:7-alpine
 make install
 
 # Setup environment (optional - for custom MongoDB credentials)
-# cp .env.example .env
-# Edit .env with your MongoDB username/password if needed
+# cp env.sample .env
+# Edit .env with your values if needed
 
 # Initialize database and seed data
-make seed  # Seeds songs + test user (testuser/testpass)
+make seed  # Seeds songs + test user (default username: testuser; password is configured via env or generated)
 # Note: Passwords are stored as secure hashes in the database, never as plain text
 
 # Run
@@ -72,7 +72,7 @@ make run 8    # Run with 8 workers
 
 ## Configuration
 
-Essential environment variables (see `.env.example` for all options):
+Essential environment variables (see `env.sample` for all options):
 
 ### Docker Compose Variables
 
@@ -192,7 +192,7 @@ All routes require JWT authentication (except `/api/v1/health`, `/api/v1/auth/lo
 
 A test user is automatically seeded when you run `make seed` or `uv run flask seed-users`:
 - **Username:** `testuser`
-- **Password:** `testpass`
+- **Password:** set `SONGS_SEED_TEST_PASSWORD` before running `make seed-users` (or it will be generated and printed once)
 
 **Important Security Note:** Passwords are stored as secure hashes (using Werkzeug's password hashing) in the database, never as plain text. The seed script creates a user with a hashed password, and the login endpoint verifies passwords against these hashes.
 
@@ -200,12 +200,12 @@ A test user is automatically seeded when you run `make seed` or `uv run flask se
 # Register a new user
 curl -X POST http://localhost:8000/api/v1/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username": "myuser", "password": "mypassword123"}'
+  -d '{"username": "myuser", "password": "your-password"}'
 
 # Login with seeded test user
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "testuser", "password": "testpass"}'
+  -d '{"username": "testuser", "password": "your-password"}'
 
 # Response: {"access_token": "...", "token_type": "bearer"}
 # Use token (IMPORTANT: Include "Bearer " prefix before the token)
@@ -243,7 +243,7 @@ make format        # Format code
 # Database & Seeding
 make init-db       # Initialize database and create indexes
 make seed-songs    # Seed songs from songs.json
-make seed-users    # Seed test user (testuser/testpass)
+make seed-users    # Seed test user (username from SONGS_SEED_TEST_USERNAME; password from SONGS_SEED_TEST_PASSWORD or generated)
 make seed          # Initialize DB and seed all data (songs + test user)
 ```
 
@@ -254,7 +254,7 @@ The application includes seed data for development and testing:
 - **Songs:** Run `make seed-songs` to populate the database with songs from `songs.json`
 - **Test User:** Run `make seed-users` to create a test user:
   - Username: `testuser`
-  - Password: `testpass`
+  - Password: set `SONGS_SEED_TEST_PASSWORD` (or it will be generated and printed once)
   - **Note:** The password is stored as a secure hash in the database (using Werkzeug's password hashing), never as plain text
 
 You can run `make seed` to initialize the database and seed all data at once.

@@ -59,10 +59,11 @@ def test_uow_provides_ratings_repository(test_db, sample_songs):
         assert isinstance(uow.ratings_repository, RatingsRepository)
 
 
-def test_uow_provides_users_repository(test_db):
+def test_uow_provides_users_repository(test_db, password_factory):
     """Test that UnitOfWork provides UsersRepository."""
+    password = password_factory()
     with UnitOfWork() as uow:
-        user = uow.users_repository.create_user(username="testuser123", password="testpass")
+        user = uow.users_repository.create_user(username="testuser123", password=password)
 
         assert user is not None
         assert user.username == "testuser123"
@@ -139,15 +140,16 @@ def test_ratings_repository_get_stats(test_db, sample_songs):
     assert stats.sum == 3
 
 
-def test_users_repository_create_and_get(test_db):
+def test_users_repository_create_and_get(test_db, password_factory):
     """Test UsersRepository create and get methods directly."""
     repo = UsersRepository()
 
-    user = repo.create_user(username="newuser", password="password123")
+    password = password_factory()
+    user = repo.create_user(username="newuser", password=password)
     assert user is not None
     assert user.username == "newuser"
 
     found_user = repo.get_by_username("newuser")
     assert found_user is not None
     assert found_user.username == "newuser"
-    assert found_user.check_password("password123")
+    assert found_user.check_password(password)
