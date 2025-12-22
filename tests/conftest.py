@@ -4,6 +4,7 @@ from datetime import date
 
 import mongomock
 import pytest
+import secrets
 from mongoengine import connect, disconnect
 
 from songs_api import create_app
@@ -28,7 +29,23 @@ def test_db():
 
 
 @pytest.fixture
-def app(test_db):
+def password_factory():
+    """Generate a non-hardcoded password value for tests (avoids committed credential-like literals)."""
+
+    def _make(nbytes: int = 18) -> str:
+        return secrets.token_urlsafe(nbytes)
+
+    return _make
+
+
+@pytest.fixture
+def test_user_credentials(password_factory):
+    """Credentials for the default test user (password generated at runtime)."""
+    return {"username": "testuser", "password": password_factory()}
+
+
+@pytest.fixture
+def app(test_db, test_user_credentials):
     """Create Flask app with test configuration."""
     settings = Settings(
         mongo_uri="mongodb://localhost:27017",
@@ -46,9 +63,12 @@ def app(test_db):
 
     with app.app_context():
         with UnitOfWork() as uow:
-            existing_user = uow.users_repository.get_by_username("testuser")
+            existing_user = uow.users_repository.get_by_username(test_user_credentials["username"])
             if not existing_user:
-                uow.users_repository.create_user(username="testuser", password="testpass")
+                uow.users_repository.create_user(
+                    username=test_user_credentials["username"],
+                    password=test_user_credentials["password"],
+                )
 
     yield app
 
@@ -63,10 +83,10 @@ def client(app):
 
 
 @pytest.fixture
-def auth_token(app):
+def auth_token(app, test_user_credentials):
     """Generate a JWT token for tests."""
     with app.app_context():
-        return create_access_token(username="testuser")
+        return create_access_token(username=test_user_credentials["username"])
 
 
 @pytest.fixture

@@ -175,11 +175,11 @@ def test_search_pagination_edge_cases(client, auth_headers, sample_songs):
     assert len(data["data"]) == 0
 
 
-def test_login_empty_username(client):
+def test_login_empty_username(client, password_factory):
     """Test login with empty username."""
     response = client.post(
         "/api/v1/auth/login",
-        json={"username": "", "password": "testpass"},
+        json={"username": "", "password": password_factory()},
     )
     assert response.status_code in [400, 401, 422]
 
@@ -210,17 +210,18 @@ def test_register_duplicate_username(client, app):
 
 def test_register_short_password(client):
     """Test registration with password too short."""
+    short_password = "x" * 5
     response = client.post(
         "/api/v1/auth/register",
-        json={"username": "newuser", "password": "12345"},
+        json={"username": "newuser", "password": short_password},
     )
     assert response.status_code == 422
 
 
-def test_register_short_username(client):
+def test_register_short_username(client, password_factory):
     """Test registration with username too short."""
     response = client.post(
         "/api/v1/auth/register",
-        json={"username": "ab", "password": "password123"},
+        json={"username": "ab", "password": password_factory()},
     )
     assert response.status_code == 422

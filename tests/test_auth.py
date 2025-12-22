@@ -1,8 +1,8 @@
-def test_login_success(client):
+def test_login_success(client, test_user_credentials):
     """Test successful login returns JWT token."""
     response = client.post(
         "/api/v1/auth/login",
-        json={"username": "testuser", "password": "testpass"},
+        json=test_user_credentials,
     )
     assert response.status_code == 200
     data = response.get_json()
@@ -10,11 +10,11 @@ def test_login_success(client):
     assert data["token_type"] == "bearer"
 
 
-def test_login_invalid_credentials(client):
+def test_login_invalid_credentials(client, password_factory):
     """Test login with invalid credentials."""
     response = client.post(
         "/api/v1/auth/login",
-        json={"username": "wrong", "password": "wrong"},
+        json={"username": "wrong", "password": password_factory()},
     )
     assert response.status_code == 401
 
